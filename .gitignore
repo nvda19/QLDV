@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Chứng chỉ HTTPS local (khóa riêng không được đưa vào Git)
+backend/certs/
+
+# Build output
+frontend/dist/
+
+# Prisma generated
+backend/src/generated/
+
+# DB backup dumps (sinh tự động bởi backup.service.js)
+backend/backups/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+.grapuco
+
+.agents/
+
+.claude/
+
+Hinhve/*
+
+quyenDoAN/*
+*.md
+!README.md
