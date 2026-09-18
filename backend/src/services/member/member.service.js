@@ -386,9 +386,9 @@ const upsertProfileSections = async (memberId, data, isCreate) => {
   if (SoQuyetDinhKhenThuong !== undefined) {
     const soQd = (SoQuyetDinhKhenThuong || "").trim();
     const qd = soQd
-      ? await prisma.quyetDinh.findFirst({ where: { SoQuyetDinh: soQd } })
+      ? await prisma.quyetDinh.findFirst({ where: { soQuyetDinh: soQd } })
       : null;
-    quyetDinhKhenThuongId = qd ? qd.Id : null;
+    quyetDinhKhenThuongId = qd ? (qd.id || qd.Id) : null;
   }
 
   await memberRepository.upsertRewardDiscipline(memberId, {
@@ -511,15 +511,15 @@ const syncMemberCollections = async (memberId, data) => {
 
       let qd = null;
       if (qdId) {
-        qd = await prisma.quyetDinh.findUnique({ where: { Id: qdId } });
+        qd = await prisma.quyetDinh.findUnique({ where: { id: qdId } });
       } else if (soQd && soQd.trim() !== "") {
-        qd = await prisma.quyetDinh.findFirst({ where: { SoQuyetDinh: soQd } });
+        qd = await prisma.quyetDinh.findFirst({ where: { soQuyetDinh: soQd } });
       }
 
       if (qd) {
-        qdId = qd.Id;
-        soQd = qd.SoQuyetDinh;
-        effDate = qd.NgayBanHanh;
+        qdId = qd.id || qd.Id;
+        soQd = qd.soQuyetDinh || qd.SoQuyetDinh;
+        effDate = qd.ngayBanHanh || qd.NgayBanHanh || effDate;
       }
 
       mappedRankHistories.push({
@@ -552,14 +552,14 @@ const syncMemberCollections = async (memberId, data) => {
 
       let qd = null;
       if (qdId) {
-        qd = await prisma.quyetDinh.findUnique({ where: { Id: qdId } });
+        qd = await prisma.quyetDinh.findUnique({ where: { id: qdId } });
       } else if (soQd && soQd.trim() !== "") {
-        qd = await prisma.quyetDinh.findFirst({ where: { SoQuyetDinh: soQd } });
+        qd = await prisma.quyetDinh.findFirst({ where: { soQuyetDinh: soQd } });
       }
 
       if (qd) {
-        qdId = qd.Id;
-        soQd = qd.SoQuyetDinh;
+        qdId = qd.id || qd.Id;
+        soQd = qd.soQuyetDinh || qd.SoQuyetDinh;
       }
 
       mappedEvaluations.push({
@@ -644,11 +644,16 @@ const getAllMembers = async (user) => {
   } else {
     const historicalMemberIds = new Set();
     auditLogs.forEach((log) => {
+      const giaTriCu = log.giaTriCu || log.GiaTriCu;
+      const giaTriMoi = log.giaTriMoi || log.GiaTriMoi;
+      const banGhiId = log.banGhiId || log.BanGhiId;
+      const toChucDangIdCu = giaTriCu?.toChucDangId || giaTriCu?.ToChucDangId;
+      const toChucDangIdMoi = giaTriMoi?.toChucDangId || giaTriMoi?.ToChucDangId;
       if (
-        log.GiaTriCu?.ToChucDangId === user.orgId ||
-        log.GiaTriMoi?.ToChucDangId === user.orgId
+        toChucDangIdCu === user.orgId ||
+        toChucDangIdMoi === user.orgId
       ) {
-        historicalMemberIds.add(log.BanGhiId);
+        historicalMemberIds.add(banGhiId);
       }
     });
     list = await memberRepository.findAllWithInclude(
@@ -663,36 +668,45 @@ const getAllMembers = async (user) => {
   }
 
   const allOrgs = await orgRepository.findAll();
-  const orgMap = new Map(allOrgs.map((o) => [o.Id, o]));
+  const orgMap = new Map(allOrgs.map((o) => [o.id || o.Id, o]));
 
   return list.map((dv) => {
     const mapped = mapToFrontend(dv, orgMap);
-    const memberLogs = logsByMember[dv.Id] || [];
+    const memberLogs = logsByMember[dv.id || dv.Id] || [];
     const orgHistory = [
       {
-        date: (
+        date: new Date(
+          dv.thongTinVaoDang?.ngayVaoDang ||
           dv.ThongTinVaoDang?.NgayVaoDang ||
+          dv.createdAt ||
           dv.CreatedAt ||
-          new Date()
+          Date.now()
         ).toISOString(),
-        orgId: dv.ToChucDangId,
+        orgId: dv.toChucDangId || dv.ToChucDangId,
       },
     ];
     memberLogs.forEach((log) => {
-      if (log.HanhDong === "CREATE" && log.GiaTriMoi?.ToChucDangId) {
+      const hanhDong = log.hanhDong || log.HanhDong;
+      const giaTriMoi = log.giaTriMoi || log.GiaTriMoi;
+      const giaTriCu = log.giaTriCu || log.GiaTriCu;
+      const toChucDangIdMoi = giaTriMoi?.toChucDangId || giaTriMoi?.ToChucDangId;
+      const toChucDangIdCu = giaTriCu?.toChucDangId || giaTriCu?.ToChucDangId;
+      const logDate = new Date(log.createdAt || log.CreatedAt || Date.now()).toISOString();
+
+      if (hanhDong === "CREATE" && toChucDangIdMoi) {
         orgHistory[0] = {
-          date: log.CreatedAt.toISOString(),
-          orgId: log.GiaTriMoi.ToChucDangId,
+          date: logDate,
+          orgId: toChucDangIdMoi,
         };
       } else if (
-        log.HanhDong === "UPDATE" &&
-        log.GiaTriMoi?.ToChucDangId &&
-        log.GiaTriCu?.ToChucDangId &&
-        log.GiaTriMoi.ToChucDangId !== log.GiaTriCu.ToChucDangId
+        hanhDong === "UPDATE" &&
+        toChucDangIdMoi &&
+        toChucDangIdCu &&
+        toChucDangIdMoi !== toChucDangIdCu
       ) {
         orgHistory.push({
-          date: log.CreatedAt.toISOString(),
-          orgId: log.GiaTriMoi.ToChucDangId,
+          date: logDate,
+          orgId: toChucDangIdMoi,
         });
       }
     });

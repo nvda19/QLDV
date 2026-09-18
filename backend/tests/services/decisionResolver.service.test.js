@@ -25,21 +25,25 @@ describe("resolveQuyetDinh", () => {
   test("có QuyetDinhId hợp lệ và tồn tại -> dùng lại, không tạo mới", async () => {
     const prisma = makePrismaMock();
     prisma.quyetDinh.findUnique.mockResolvedValueOnce({
-      Id: "qd1",
-      SoQuyetDinh: "01/QD",
-      TaiLieuUrl: "/uploads/attachments/a.pdf",
-      TaiLieuName: "a.pdf",
+      id: "qd1",
+      soQuyetDinh: "01/QD",
+      taiLieuUrl: "/uploads/attachments/a.pdf",
+      taiLieuName: "a.pdf",
     });
 
     const result = await resolveQuyetDinh(prisma, { QuyetDinhId: "qd1" }, null, "KHEN_THUONG");
 
-    expect(prisma.quyetDinh.findUnique).toHaveBeenCalledWith({ where: { Id: "qd1" } });
+    expect(prisma.quyetDinh.findUnique).toHaveBeenCalledWith({ where: { id: "qd1" } });
     expect(prisma.quyetDinh.create).not.toHaveBeenCalled();
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       QuyetDinhId: "qd1",
+      quyetDinhId: "qd1",
       SoQuyetDinh: "01/QD",
+      soQuyetDinh: "01/QD",
       TaiLieuUrl: "/uploads/attachments/a.pdf",
+      taiLieuUrl: "/uploads/attachments/a.pdf",
       TaiLieuName: "a.pdf",
+      taiLieuName: "a.pdf",
     });
   });
 
@@ -54,11 +58,15 @@ describe("resolveQuyetDinh", () => {
       "KHEN_THUONG",
     );
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       QuyetDinhId: null,
+      quyetDinhId: null,
       SoQuyetDinh: null,
+      soQuyetDinh: null,
       TaiLieuUrl: null,
+      taiLieuUrl: null,
       TaiLieuName: null,
+      taiLieuName: null,
     });
   });
 
@@ -67,10 +75,10 @@ describe("resolveQuyetDinh", () => {
     prisma.quyetDinh.findUnique
       .mockResolvedValueOnce(null) // tra theo Id -> không có
       .mockResolvedValueOnce({
-        Id: "qd2",
-        SoQuyetDinh: "02/QD",
-        TaiLieuUrl: null,
-        TaiLieuName: null,
+        id: "qd2",
+        soQuyetDinh: "02/QD",
+        taiLieuUrl: null,
+        taiLieuName: null,
       });
 
     const result = await resolveQuyetDinh(
@@ -82,6 +90,7 @@ describe("resolveQuyetDinh", () => {
 
     expect(prisma.quyetDinh.create).not.toHaveBeenCalled();
     expect(result.QuyetDinhId).toBe("qd2");
+    expect(result.quyetDinhId).toBe("qd2");
     expect(result.TaiLieuUrl).toBeNull();
   });
 
@@ -89,10 +98,10 @@ describe("resolveQuyetDinh", () => {
     const prisma = makePrismaMock();
     prisma.quyetDinh.findUnique.mockResolvedValueOnce(null);
     prisma.quyetDinh.create.mockResolvedValueOnce({
-      Id: "qd-moi",
-      SoQuyetDinh: "03/QD",
-      TaiLieuUrl: null,
-      TaiLieuName: null,
+      id: "qd-moi",
+      soQuyetDinh: "03/QD",
+      taiLieuUrl: null,
+      taiLieuName: null,
     });
 
     const result = await resolveQuyetDinh(
@@ -106,29 +115,30 @@ describe("resolveQuyetDinh", () => {
     expect(prisma.quyetDinh.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          SoQuyetDinh: "03/QD",
-          TenQuyetDinh: "Quyết định khen thưởng",
-          LoaiQuyetDinh: "KHEN_THUONG",
-          TaiLieuUrl: null,
-          TaiLieuName: null,
+          soQuyetDinh: "03/QD",
+          tenQuyetDinh: "Quyết định khen thưởng",
+          loaiQuyetDinh: "KHEN_THUONG",
+          taiLieuUrl: null,
+          taiLieuName: null,
         }),
       }),
     );
     expect(result.QuyetDinhId).toBe("qd-moi");
+    expect(result.quyetDinhId).toBe("qd-moi");
   });
 
   test("không tìm thấy, có file đính kèm -> upload file trước khi tạo quyết định mới", async () => {
     const prisma = makePrismaMock();
     prisma.quyetDinh.findUnique.mockResolvedValueOnce(null);
     saveUploadFile.mockResolvedValueOnce({
-      FileUrl: "/uploads/attachments/qd.pdf",
+      fileUrl: "/uploads/attachments/qd.pdf",
       fileName: "qd.pdf",
     });
     prisma.quyetDinh.create.mockResolvedValueOnce({
-      Id: "qd-moi-2",
-      SoQuyetDinh: "04/QD",
-      TaiLieuUrl: "/uploads/attachments/qd.pdf",
-      TaiLieuName: "qd.pdf",
+      id: "qd-moi-2",
+      soQuyetDinh: "04/QD",
+      taiLieuUrl: "/uploads/attachments/qd.pdf",
+      taiLieuName: "qd.pdf",
     });
     const fakeFile = { originalname: "qd.pdf", buffer: Buffer.from("x") };
 
@@ -141,6 +151,7 @@ describe("resolveQuyetDinh", () => {
 
     expect(saveUploadFile).toHaveBeenCalledWith(expect.any(String), fakeFile);
     expect(result.TaiLieuUrl).toBe("/uploads/attachments/qd.pdf");
+    expect(result.taiLieuUrl).toBe("/uploads/attachments/qd.pdf");
   });
 
   test("không có QuyetDinhId lẫn SoQuyetDinh -> trả về object rỗng, không tạo/tra cứu gì", async () => {
@@ -150,11 +161,15 @@ describe("resolveQuyetDinh", () => {
 
     expect(prisma.quyetDinh.findUnique).not.toHaveBeenCalled();
     expect(prisma.quyetDinh.create).not.toHaveBeenCalled();
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       QuyetDinhId: null,
+      quyetDinhId: null,
       SoQuyetDinh: null,
+      soQuyetDinh: null,
       TaiLieuUrl: null,
+      taiLieuUrl: null,
       TaiLieuName: null,
+      taiLieuName: null,
     });
   });
 
@@ -162,17 +177,17 @@ describe("resolveQuyetDinh", () => {
     const prisma = makePrismaMock();
     prisma.quyetDinh.findUnique.mockResolvedValueOnce(null);
     prisma.quyetDinh.create.mockResolvedValueOnce({
-      Id: "qd-x",
-      SoQuyetDinh: "05/QD",
-      TaiLieuUrl: null,
-      TaiLieuName: null,
+      id: "qd-x",
+      soQuyetDinh: "05/QD",
+      taiLieuUrl: null,
+      taiLieuName: null,
     });
 
     await resolveQuyetDinh(prisma, { SoQuyetDinh: "05/QD" }, null, "KHEN_THUONG");
 
     expect(prisma.quyetDinh.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ TenQuyetDinh: "Quyết định số 05/QD" }),
+        data: expect.objectContaining({ tenQuyetDinh: "Quyết định số 05/QD" }),
       }),
     );
   });

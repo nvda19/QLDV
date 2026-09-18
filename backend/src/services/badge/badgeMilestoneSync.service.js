@@ -10,12 +10,13 @@ const syncBadgeMilestone = async (memberId, MocHuyHieu, tx = null) => {
   const prismaClient = tx || require("../../infrastructure/database/prisma");
   const milestoneStr = `${MocHuyHieu} năm tuổi Đảng`;
   const member = await prismaClient.dangVien.findUnique({
-    where: { Id: memberId },
-    include: { KhenThuongKyLuat: true },
+    where: { id: memberId },
+    include: { khenThuongKyLuat: true },
   });
   if (!member) return;
 
-  const currentBadge = member.KhenThuongKyLuat?.HuyHieuDang || "";
+  const ktkl = member.khenThuongKyLuat || member.KhenThuongKyLuat;
+  const currentBadge = (ktkl && (ktkl.huyHieuDang !== undefined ? ktkl.huyHieuDang : ktkl.HuyHieuDang)) || "";
   // tránh nối trùng nếu mốc này lỡ được đồng bộ hai lần
   let newBadge;
   if (
@@ -32,9 +33,9 @@ const syncBadgeMilestone = async (memberId, MocHuyHieu, tx = null) => {
   }
 
   await prismaClient.khenThuongKyLuat.upsert({
-    where: { DangVienId: memberId },
-    create: { DangVienId: memberId, HuyHieuDang: newBadge },
-    update: { HuyHieuDang: newBadge },
+    where: { dangVienId: memberId },
+    create: { dangVienId: memberId, huyHieuDang: newBadge },
+    update: { huyHieuDang: newBadge },
   });
 };
 

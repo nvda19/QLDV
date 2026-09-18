@@ -14,7 +14,11 @@ const crypto = require("crypto");
  * @param {Object|null} tx Prisma transaction client (nếu gọi trong 1 transaction ngoài), hoặc null
  */
 const resolveQuyetDinh = async (tx, data, file, LoaiQuyetDinh) => {
-  let QuyetDinhId = data.QuyetDinhId;
+  let QuyetDinhId = data.quyetDinhId !== undefined ? data.quyetDinhId : data.QuyetDinhId;
+  let SoQuyetDinh = data.soQuyetDinh !== undefined ? data.soQuyetDinh : data.SoQuyetDinh;
+  let TenQuyetDinh = data.tenQuyetDinh !== undefined ? data.tenQuyetDinh : data.TenQuyetDinh;
+  let loaiQD = LoaiQuyetDinh || data.loaiQuyetDinh || data.LoaiQuyetDinh;
+  let NgayBanHanh = data.ngayBanHanh || data.NgayBanHanh || data.ngayHieuLuc || data.NgayHieuLuc;
 
   if (
     QuyetDinhId &&
@@ -25,22 +29,34 @@ const resolveQuyetDinh = async (tx, data, file, LoaiQuyetDinh) => {
     const qd = await decisionRepository.findById(QuyetDinhId, tx);
     if (qd) {
       return {
-        QuyetDinhId: qd.Id,
-        SoQuyetDinh: qd.SoQuyetDinh,
-        TaiLieuUrl: qd.TaiLieuUrl,
-        TaiLieuName: qd.TaiLieuName,
+        id: qd.id || qd.Id,
+        Id: qd.id || qd.Id,
+        quyetDinhId: qd.id || qd.Id,
+        QuyetDinhId: qd.id || qd.Id,
+        soQuyetDinh: qd.soQuyetDinh || qd.SoQuyetDinh,
+        SoQuyetDinh: qd.soQuyetDinh || qd.SoQuyetDinh,
+        taiLieuUrl: qd.taiLieuUrl || qd.TaiLieuUrl || null,
+        TaiLieuUrl: qd.taiLieuUrl || qd.TaiLieuUrl || null,
+        taiLieuName: qd.taiLieuName || qd.TaiLieuName || null,
+        TaiLieuName: qd.taiLieuName || qd.TaiLieuName || null,
       };
     }
   }
 
-  if (data.SoQuyetDinh && data.SoQuyetDinh.trim() !== "") {
-    let qd = await decisionRepository.findByDecisionNumber(data.SoQuyetDinh, tx);
+  if (SoQuyetDinh && SoQuyetDinh.trim() !== "") {
+    let qd = await decisionRepository.findByDecisionNumber(SoQuyetDinh, tx);
     if (qd) {
       return {
-        QuyetDinhId: qd.Id,
-        SoQuyetDinh: qd.SoQuyetDinh,
-        TaiLieuUrl: qd.TaiLieuUrl || null,
-        TaiLieuName: qd.TaiLieuName || null,
+        id: qd.id || qd.Id,
+        Id: qd.id || qd.Id,
+        quyetDinhId: qd.id || qd.Id,
+        QuyetDinhId: qd.id || qd.Id,
+        soQuyetDinh: qd.soQuyetDinh || qd.SoQuyetDinh,
+        SoQuyetDinh: qd.soQuyetDinh || qd.SoQuyetDinh,
+        taiLieuUrl: qd.taiLieuUrl || qd.TaiLieuUrl || null,
+        TaiLieuUrl: qd.taiLieuUrl || qd.TaiLieuUrl || null,
+        taiLieuName: qd.taiLieuName || qd.TaiLieuName || null,
+        TaiLieuName: qd.taiLieuName || qd.TaiLieuName || null,
       };
     } else {
       const tempId = crypto.randomUUID();
@@ -49,41 +65,51 @@ const resolveQuyetDinh = async (tx, data, file, LoaiQuyetDinh) => {
 
       if (file) {
         const saved = await saveUploadFile(tempId, file);
-        qdTaiLieuUrl = saved.FileUrl;
+        qdTaiLieuUrl = saved.fileUrl || saved.FileUrl;
         qdTaiLieuName = saved.fileName;
       }
 
       qd = await decisionRepository.create(
         {
-          Id: tempId,
-          SoQuyetDinh: data.SoQuyetDinh,
-          TenQuyetDinh:
-            data.TenQuyetDinh || `Quyết định số ${data.SoQuyetDinh}`,
-          LoaiQuyetDinh: LoaiQuyetDinh,
-          NgayBanHanh: data.NgayBanHanh
-            ? new Date(data.NgayBanHanh)
-            : data.NgayHieuLuc
-              ? new Date(data.NgayHieuLuc)
-              : new Date(),
-          TaiLieuUrl: qdTaiLieuUrl,
-          TaiLieuName: qdTaiLieuName,
+          id: tempId,
+          soQuyetDinh: SoQuyetDinh,
+          tenQuyetDinh:
+            TenQuyetDinh || `Quyết định số ${SoQuyetDinh}`,
+          loaiQuyetDinh: loaiQD,
+          ngayBanHanh: NgayBanHanh
+            ? new Date(NgayBanHanh)
+            : new Date(),
+          taiLieuUrl: qdTaiLieuUrl,
+          taiLieuName: qdTaiLieuName,
         },
         tx,
       );
 
       return {
-        QuyetDinhId: qd.Id,
-        SoQuyetDinh: qd.SoQuyetDinh,
-        TaiLieuUrl: qd.TaiLieuUrl,
-        TaiLieuName: qd.TaiLieuName,
+        id: qd.id || qd.Id,
+        Id: qd.id || qd.Id,
+        quyetDinhId: qd.id || qd.Id,
+        QuyetDinhId: qd.id || qd.Id,
+        soQuyetDinh: qd.soQuyetDinh || qd.SoQuyetDinh,
+        SoQuyetDinh: qd.soQuyetDinh || qd.SoQuyetDinh,
+        taiLieuUrl: qd.taiLieuUrl || qd.TaiLieuUrl || null,
+        TaiLieuUrl: qd.taiLieuUrl || qd.TaiLieuUrl || null,
+        taiLieuName: qd.taiLieuName || qd.TaiLieuName || null,
+        TaiLieuName: qd.taiLieuName || qd.TaiLieuName || null,
       };
     }
   }
 
   return {
+    id: null,
+    Id: null,
+    quyetDinhId: null,
     QuyetDinhId: null,
+    soQuyetDinh: null,
     SoQuyetDinh: null,
+    taiLieuUrl: null,
     TaiLieuUrl: null,
+    taiLieuName: null,
     TaiLieuName: null,
   };
 };

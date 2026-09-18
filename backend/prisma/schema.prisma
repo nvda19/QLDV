@@ -2,7 +2,7 @@
 // SCHEMA PRISMA - HỆ THỐNG QUẢN LÝ ĐẢNG VIÊN
 // Thiết kế theo Mẫu 2-HSĐV (Phiếu Đảng viên) cập nhật
 // Phân tách nhiều bảng để tối ưu hóa và dễ mở rộng
-// Ngôn ngữ các bảng & trường: Tiếng Việt không dấu (PascalCase)
+// Ngôn ngữ các bảng: PascalCase, các trường: camelCase
 // =====================================================
 
 generator client {
@@ -25,6 +25,11 @@ enum VaiTro {
 enum TrangThaiDangVien {
   HOAT_DONG
   MIEN_SINH_HOAT
+  DU_BI
+  CHUYEN_DI
+  XOA_TEN
+  KHAI_TRU
+  TU_TRAN
 }
 
 enum TrangThaiPheDuyet {
@@ -32,6 +37,7 @@ enum TrangThaiPheDuyet {
   PENDING
   APPROVED
   REJECTED
+  DISMISSED
 }
 
 enum TrangThaiNguoiDung {
@@ -43,6 +49,8 @@ enum LoaiQuyetDinh {
   KHEN_THUONG
   THANG_HAM
   HUY_HIEU_DANG
+  XEP_LOAI
+  KY_LUAT
 }
 
 enum LoaiDeXuatHuyHieu {
@@ -63,6 +71,10 @@ enum LoaiThongBao {
   EVALUATION_SUBMITTED
   EVALUATION_APPROVED
   EVALUATION_REJECTED
+  BADGE_ELIGIBLE
+  BADGE_PROPOSED
+  BADGE_APPROVED
+  BADGE_REJECTED
   SYSTEM
 }
 
@@ -72,308 +84,355 @@ enum LoaiThongBao {
 
 // 1. TỔ CHỨC ĐẢNG (Cấu trúc phân cấp Học viện -> Đảng bộ Khoa -> Chi bộ)
 model ToChucDang {
-  Id                String       @id @default(uuid()) @db.Uuid @map("id")
-  Ten               String       @unique @db.VarChar(255) @map("ten")
-  ToChucChaId       String?      @db.Uuid @map("toChucChaId")
-  ToChucCha         ToChucDang?  @relation("ToChucTuThamChieu", fields: [ToChucChaId], references: [Id])
-  DanhSachToChucCon ToChucDang[] @relation("ToChucTuThamChieu")
-  DanhSachDangVien  DangVien[]
-  DanhSachNguoiDung NguoiDung[]
-  CreatedAt         DateTime     @default(now()) @map("createdAt")
+  id                String       @id @default(uuid()) @db.Uuid @map("id")
+  ten               String       @unique @db.VarChar(255) @map("ten")
+  toChucChaId       String?      @db.Uuid @map("toChucChaId")
+  toChucCha         ToChucDang?  @relation("ToChucTuThamChieu", fields: [toChucChaId], references: [id])
+  danhSachToChucCon ToChucDang[] @relation("ToChucTuThamChieu")
+  danhSachDangVien  DangVien[]
+  danhSachNguoiDung NguoiDung[]
+  createdAt         DateTime     @default(now()) @map("createdAt")
+
+  @@index([toChucChaId])
 }
 
 // 2. NGƯỜI DÙNG HỆ THỐNG
 model NguoiDung {
-  Id                   String             @id @default(uuid()) @db.Uuid @map("id")
-  TenDangNhap          String             @unique @db.VarChar(50) @map("tenDangNhap")
-  MatKhauHash          String             @db.VarChar(255) @map("matKhauHash")
-  VaiTro               VaiTro             @map("vaiTro")
-  ToChucDangId         String?            @db.Uuid @map("toChucDangId")
-  ToChucDang           ToChucDang?        @relation(fields: [ToChucDangId], references: [Id])
-  HoTen                String             @default("Người dùng") @db.VarChar(100) @map("hoTen")
-  TrangThai            TrangThaiNguoiDung @default(ACTIVE) @map("trangThai")
-  SoLanSaiMatKhau      Int                @default(0) @map("soLanSaiMatKhau")
-  YeuCauDoiMatKhau     Boolean            @default(true) @map("yeuCauDoiMatKhau")
-  RefreshToken         String?            @db.VarChar(500) @map("refreshToken")
-  CreatedAt            DateTime           @default(now()) @map("createdAt")
-  NhatKyHeThong        NhatKyHeThong[]
-  DanhSachThongBaoNhan ThongBao[]         @relation("ThongBaoNhan")
-  DanhSachThongBaoGui  ThongBao[]         @relation("ThongBaoGui")
+  id                   String             @id @default(uuid()) @db.Uuid @map("id")
+  tenDangNhap          String             @unique @db.VarChar(50) @map("tenDangNhap")
+  matKhauHash          String             @db.VarChar(255) @map("matKhauHash")
+  vaiTro               VaiTro             @map("vaiTro")
+  toChucDangId         String?            @db.Uuid @map("toChucDangId")
+  toChucDang           ToChucDang?        @relation(fields: [toChucDangId], references: [id])
+  hoTen                String             @default("Người dùng") @db.VarChar(100) @map("hoTen")
+  trangThai            TrangThaiNguoiDung @default(ACTIVE) @map("trangThai")
+  soLanSaiMatKhau      Int                @default(0) @map("soLanSaiMatKhau")
+  yeuCauDoiMatKhau     Boolean            @default(true) @map("yeuCauDoiMatKhau")
+  refreshToken         String?            @db.VarChar(500) @map("refreshToken")
+  createdAt            DateTime           @default(now()) @map("createdAt")
+  updatedAt            DateTime           @default(now()) @updatedAt @map("updatedAt")
+  nhatKyHeThong        NhatKyHeThong[]
+  danhSachThongBaoNhan ThongBao[]         @relation("ThongBaoNhan")
+  danhSachThongBaoGui  ThongBao[]         @relation("ThongBaoGui")
+
+  @@index([toChucDangId])
 }
 
 // 3. BẢNG CỐT LÕI - ĐẢNG VIÊN
 model DangVien {
-  Id                    String            @id @default(uuid()) @db.Uuid @map("id")
-  ToChucDangId          String            @db.Uuid @map("toChucDangId")
-  ToChucDang            ToChucDang        @relation(fields: [ToChucDangId], references: [Id])
-  SoLyLich              String?           @unique @db.VarChar(20) @map("soLyLich")
-  SoTheDangVien         String?           @unique @db.VarChar(20) @map("soTheDangVien")
-  TrangThai             TrangThaiDangVien @default(HOAT_DONG) @map("trangThai")
-  CreatedAt             DateTime          @default(now()) @map("createdAt")
-  UpdatedAt             DateTime          @updatedAt @map("updatedAt")
-  DeletedAt             DateTime?         @map("deletedAt")
-  DeletedBy             String?           @db.VarChar(50) @map("deletedBy")
-  LyLichCaNhan          LyLichCaNhan?
-  ThongTinVaoDang       ThongTinVaoDang?
-  TrinhDoHocVan         TrinhDoHocVan?
-  TuyenDungQuanNgu      TuyenDungQuanNgu?
-  SucKhoeChinhSach      SucKhoeChinhSach?
-  KhenThuongKyLuat      KhenThuongKyLuat?
-  DacDiemLyLich         DacDiemLyLich?
-  DanhSachQuanHeGiaDinh QuanHeGiaDinh[]
-  DanhSachCongTac       QuaTrinhCongTac[]
-  DanhSachDaoTao        QuaTrinhDaoTao[]
-  DanhSachQuanHam       LichSuQuanHam[]
-  DanhSachDanhGia       DanhGiaDangVien[]
-  DanhSachTaiLieu       TaiLieuDinhKem[]
-  DanhSachHuyHieu       DeXuatHuyHieu[]
+  id                    String            @id @default(uuid()) @db.Uuid @map("id")
+  toChucDangId          String            @db.Uuid @map("toChucDangId")
+  toChucDang            ToChucDang        @relation(fields: [toChucDangId], references: [id])
+  soLyLich              String?           @unique @db.VarChar(50) @map("soLyLich")
+  soTheDangVien         String?           @unique @db.VarChar(50) @map("soTheDangVien")
+  trangThai             TrangThaiDangVien @default(HOAT_DONG) @map("trangThai")
+  createdAt             DateTime          @default(now()) @map("createdAt")
+  updatedAt             DateTime          @updatedAt @map("updatedAt")
+  deletedAt             DateTime?         @map("deletedAt")
+  deletedBy             String?           @db.VarChar(50) @map("deletedBy")
+  lyLichCaNhan          LyLichCaNhan?
+  thongTinVaoDang       ThongTinVaoDang?
+  trinhDoHocVan         TrinhDoHocVan?
+  tuyenDungQuanNgu      TuyenDungQuanNgu?
+  sucKhoeChinhSach      SucKhoeChinhSach?
+  khenThuongKyLuat      KhenThuongKyLuat?
+  dacDiemLyLich         DacDiemLyLich?
+  danhSachQuanHeGiaDinh QuanHeGiaDinh[]
+  danhSachCongTac       QuaTrinhCongTac[]
+  danhSachDaoTao        QuaTrinhDaoTao[]
+  danhSachQuanHam       LichSuQuanHam[]
+  danhSachDanhGia       DanhGiaDangVien[]
+  danhSachTaiLieu       TaiLieuDinhKem[]
+  danhSachHuyHieu       DeXuatHuyHieu[]
+
+  @@index([toChucDangId, deletedAt])
+  @@index([deletedAt])
 }
 
 // 4. THÔNG TIN CÁ NHÂN (Mục 01-11)
 model LyLichCaNhan {
-  DangVienId           String   @id @db.Uuid @map("dangVienId")
-  DangVien             DangVien @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  HoTenDangDung        String   @db.VarChar(100) @map("hoTenDangDung") // 01) Họ và tên đang dùng
-  HoTenKhaiSinh        String   @db.VarChar(100) @map("hoTenKhaiSinh") // 03) Họ và tên khai sinh
-  GioiTinh             String   @db.VarChar(10) @map("gioiTinh") // 02) Nam, nữ
-  NgaySinh             DateTime @db.Date @map("ngaySinh") // 04) Sinh ngày (DATE thuần)
-  NoiSinh              String   @db.VarChar(255) @map("noiSinh") // 05) Nơi sinh
-  QueQuan              String   @db.VarChar(255) @map("queQuan") // 06) Quê quán
-  NoiThuongTru         String?  @db.VarChar(255) @map("noiThuongTru") // 07) Nơi thường trú
-  NoiTamTru            String?  @db.VarChar(255) @map("noiTamTru") // 07) Nơi tạm trú hiện nay
-  DanToc               String   @db.VarChar(50) @map("danToc") // 08) Dân tộc
-  TonGiao              String   @db.VarChar(50) @map("tonGiao") // 09) Tôn giáo
-  ThanhPhanGiaDinh     String   @db.VarChar(100) @map("thanhPhanGiaDinh") // 10) Thành phần gia đình
-  NgheNghiepHienNay    String?  @db.VarChar(150) @map("ngheNghiepHienNay") // 11) Nghề nghiệp hiện nay
-  NgheNghiepKhiVaoDang String?  @db.VarChar(150) @map("ngheNghiepKhiVaoDang") // Nghề nghiệp của bản thân khi vào Đảng
-  SoCMND               String?  @db.VarChar(12) @map("soCMND") // 19) Số CMND/CCCD (DATE thuần và VarChar(12))
-  SoCMTQD              String?  @db.VarChar(15) @map("soCMTQD") // Số chứng minh thư Quân đội (nếu có)
+  dangVienId           String   @id @db.Uuid @map("dangVienId")
+  dangVien             DangVien @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  hoTenDangDung        String   @db.VarChar(100) @map("hoTenDangDung") // 01) Họ và tên đang dùng
+  hoTenKhaiSinh        String   @db.VarChar(100) @map("hoTenKhaiSinh") // 03) Họ và tên khai sinh
+  gioiTinh             String   @db.VarChar(10) @map("gioiTinh") // 02) Nam, nữ
+  ngaySinh             DateTime @db.Date @map("ngaySinh") // 04) Sinh ngày (DATE thuần)
+  noiSinh              String   @db.VarChar(255) @map("noiSinh") // 05) Nơi sinh
+  queQuan              String   @db.VarChar(255) @map("queQuan") // 06) Quê quán
+  noiThuongTru         String?  @db.VarChar(255) @map("noiThuongTru") // 07) Nơi thường trú
+  noiTamTru            String?  @db.VarChar(255) @map("noiTamTru") // 07) Nơi tạm trú hiện nay
+  danToc               String   @db.VarChar(50) @map("danToc") // 08) Dân tộc
+  tonGiao              String   @db.VarChar(50) @map("tonGiao") // 09) Tôn giáo
+  thanhPhanGiaDinh     String   @db.VarChar(100) @map("thanhPhanGiaDinh") // 10) Thành phần gia đình
+  ngheNghiepHienNay    String?  @db.VarChar(150) @map("ngheNghiepHienNay") // 11) Nghề nghiệp hiện nay
+  ngheNghiepKhiVaoDang String?  @db.VarChar(150) @map("ngheNghiepKhiVaoDang") // Nghề nghiệp của bản thân khi vào Đảng
+  soCMND               String?  @db.VarChar(50) @map("soCMND") // 19) Số CMND/CCCD
+  soCMTQD              String?  @db.VarChar(50) @map("soCMTQD") // Số chứng minh thư Quân đội (nếu có)
+  soDienThoai          String?  @db.VarChar(20) @map("soDienThoai") // Số điện thoại liên hệ
+  anhChanDungUrl       String?  @db.VarChar(500) @map("anhChanDungUrl") // Ảnh chân dung 3x4
+
+  @@index([ngaySinh])
+  @@index([hoTenDangDung])
 }
 
 // 5. THÔNG TIN VÀO ĐẢNG (Mục 12)
 model ThongTinVaoDang {
-  DangVienId          String    @id @db.Uuid @map("dangVienId")
-  DangVien            DangVien  @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  NgayVaoDang         DateTime? @db.Date @map("ngayVaoDang") // 12) Ngày vào Đảng (DATE thuần)
-  ChiBoVaoDang        String?   @db.VarChar(150) @map("chiBoVaoDang") // 12) Tại Chi bộ
-  NguoiGioiThieu1     String?   @db.VarChar(100) @map("nguoiGioiThieu1") // 12) Người giới thiệu thứ 1
-  ChucVuNGT1          String?   @db.VarChar(150) @map("chucVuNGT1") // Cấp bậc, chức vụ NGT1
-  NguoiGioiThieu2     String?   @db.VarChar(100) @map("nguoiGioiThieu2") // 12) Người giới thiệu thứ 2
-  ChucVuNGT2          String?   @db.VarChar(150) @map("chucVuNGT2") // Cấp bậc, chức vụ NGT2
-  NgayQuyetDinhKetNap DateTime? @db.Date @map("ngayQuyetDinhKetNap") // Ngày quyết định kết nạp (DATE thuần)
-  NgayChinhThuc       DateTime? @db.Date @map("ngayChinhThuc") // Ngày chính thức (DATE thuần)
-  ChiBoChinhThuc      String?   @db.VarChar(150) @map("chiBoChinhThuc") // Tại Chi bộ chính thức
-  NoiSinhHoatDang     String?   @db.VarChar(150) @map("noiSinhHoatDang") // Nơi sinh hoạt Đảng hiện tại
-  ChucVuDang          String?   @db.VarChar(150) @map("chucVuDang") // Chức vụ Đảng hiện tại
-  NgayVaoDoan         DateTime? @db.Date @map("ngayVaoDoan") // 14) Ngày vào Đoàn TNCS Hồ Chí Minh (DATE thuần)
-  ToChucXaHoi         String?   @db.VarChar(255) @map("toChucXaHoi") // 15) Tham gia các tổ chức xã hội khác
-  NgayMienCongTac     DateTime? @db.Date @map("ngayMienCongTac") // 20) Miễn công tác và sinh hoạt Đảng ngày (DATE thuần)
+  dangVienId          String    @id @db.Uuid @map("dangVienId")
+  dangVien            DangVien  @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  ngayVaoDang         DateTime? @db.Date @map("ngayVaoDang") // 12) Ngày vào Đảng (DATE thuần)
+  chiBoVaoDang        String?   @db.VarChar(150) @map("chiBoVaoDang") // 12) Tại Chi bộ
+  nguoiGioiThieu1     String?   @db.VarChar(100) @map("nguoiGioiThieu1") // 12) Người giới thiệu thứ 1
+  chucVuNGT1          String?   @db.VarChar(150) @map("chucVuNGT1") // Cấp bậc, chức vụ NGT1
+  nguoiGioiThieu2     String?   @db.VarChar(100) @map("nguoiGioiThieu2") // 12) Người giới thiệu thứ 2
+  chucVuNGT2          String?   @db.VarChar(150) @map("chucVuNGT2") // Cấp bậc, chức vụ NGT2
+  ngayQuyetDinhKetNap DateTime? @db.Date @map("ngayQuyetDinhKetNap") // Ngày quyết định kết nạp (DATE thuần)
+  ngayChinhThuc       DateTime? @db.Date @map("ngayChinhThuc") // Ngày chính thức (DATE thuần)
+  chiBoChinhThuc      String?   @db.VarChar(150) @map("chiBoChinhThuc") // Tại Chi bộ chính thức
+  noiSinhHoatDang     String?   @db.VarChar(150) @map("noiSinhHoatDang") // Nơi sinh hoạt Đảng hiện tại
+  chucVuDang          String?   @db.VarChar(150) @map("chucVuDang") // Chức vụ Đảng hiện tại
+  ngayVaoDoan         DateTime? @db.Date @map("ngayVaoDoan") // 14) Ngày vào Đoàn TNCS Hồ Chí Minh (DATE thuần)
+  toChucXaHoi         String?   @db.VarChar(255) @map("toChucXaHoi") // 15) Tham gia các tổ chức xã hội khác
+  ngayMienCongTac     DateTime? @db.Date @map("ngayMienCongTac") // 20) Miễn công tác và sinh hoạt Đảng ngày (DATE thuần)
+
+  @@index([ngayVaoDang])
 }
 
 // 6. TRÌNH ĐỘ HỌC VẤN (Mục 17)
 model TrinhDoHocVan {
-  DangVienId        String   @id @db.Uuid @map("dangVienId")
-  DangVien          DangVien @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  GiaoDucPhoThong   String?  @db.VarChar(50) @map("giaoDucPhoThong") // Giáo dục phổ thông (VD: 12/12)
-  GiaoDucNgheNghiep String?  @db.VarChar(150) @map("giaoDucNgheNghiep") // Giáo dục nghề nghiệp
-  GiaoDucDaiHoc     String?  @db.VarChar(150) @map("giaoDucDaiHoc") // Giáo dục đại học và sau đại học
-  HocVi             String?  @db.VarChar(100) @map("hocVi") // Học vị (Cử nhân, Thạc sĩ, Tiến sĩ)
-  HocHam            String?  @db.VarChar(100) @map("hocHam") // Học hàm (Phó giáo sư, Giáo sư)
-  LyLuanChinhTri    String?  @db.VarChar(100) @map("lyLuanChinhTri") // Lý luận chính trị
-  NgoaiNgu          String?  @db.VarChar(100) @map("ngoaiNgu") // Ngoại ngữ
-  TinHoc            String?  @db.VarChar(100) @map("tinHoc") // Tin học
+  dangVienId        String   @id @db.Uuid @map("dangVienId")
+  dangVien          DangVien @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  giaoDucPhoThong   String?  @db.VarChar(50) @map("giaoDucPhoThong") // Giáo dục phổ thông (VD: 12/12)
+  giaoDucNgheNghiep String?  @db.VarChar(150) @map("giaoDucNgheNghiep") // Giáo dục nghề nghiệp
+  giaoDucDaiHoc     String?  @db.VarChar(150) @map("giaoDucDaiHoc") // Giáo dục đại học và sau đại học
+  hocVi             String?  @db.VarChar(100) @map("hocVi") // Học vị (Cử nhân, Thạc sĩ, Tiến sĩ)
+  hocHam            String?  @db.VarChar(100) @map("hocHam") // Học hàm (Phó giáo sư, Giáo sư)
+  lyLuanChinhTri    String?  @db.VarChar(100) @map("lyLuanChinhTri") // Lý luận chính trị
+  ngoaiNgu          String?  @db.VarChar(100) @map("ngoaiNgu") // Ngoại ngữ
+  tinHoc            String?  @db.VarChar(100) @map("tinHoc") // Tin học
 }
 
 // 7. TUYỂN DỤNG VÀ QUÂN NGŨ (Mục 13, 16)
 model TuyenDungQuanNgu {
-  DangVienId      String    @id @db.Uuid @map("dangVienId")
-  DangVien        DangVien  @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  NgayTuyenDung   DateTime? @db.Date @map("ngayTuyenDung") // 13) Ngày tuyển dụng (DATE thuần)
-  CoQuanTuyenDung String?   @db.VarChar(255) @map("coQuanTuyenDung") // Cơ quan tuyển dụng
-  NgayNhapNgu     DateTime? @db.Date @map("ngayNhapNgu") // 16) Ngày nhập ngũ (DATE thuần)
-  NgayXuatNgu     DateTime? @db.Date @map("ngayXuatNgu") // Ngày xuất ngũ (DATE thuần)
-  NgayTaiNgu      DateTime? @db.Date @map("ngayTaiNgu") // Ngày tái ngũ (DATE thuần)
-  CapBac          String?   @db.VarChar(100) @map("capBac") // Cấp bậc hiện tại
-  CongViecChinh   String?   @db.VarChar(255) @map("congViecChinh") // Công việc chính đang làm
+  dangVienId      String    @id @db.Uuid @map("dangVienId")
+  dangVien        DangVien  @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  ngayTuyenDung   DateTime? @db.Date @map("ngayTuyenDung") // 13) Ngày tuyển dụng (DATE thuần)
+  coQuanTuyenDung String?   @db.VarChar(255) @map("coQuanTuyenDung") // Cơ quan tuyển dụng
+  ngayNhapNgu     DateTime? @db.Date @map("ngayNhapNgu") // 16) Ngày nhập ngũ (DATE thuần)
+  ngayXuatNgu     DateTime? @db.Date @map("ngayXuatNgu") // Ngày xuất ngũ (DATE thuần)
+  ngayTaiNgu      DateTime? @db.Date @map("ngayTaiNgu") // Ngày tái ngũ (DATE thuần)
+  capBac          String?   @db.VarChar(100) @map("capBac") // Cấp bậc hiện tại
+  congViecChinh   String?   @db.VarChar(255) @map("congViecChinh") // Công việc chính đang làm
 }
 
 // 8. SỨC KHỎE VÀ THÔNG TIN KHÁC (Mục 18, 19, 20)
 model SucKhoeChinhSach {
-  DangVienId       String   @id @db.Uuid @map("dangVienId")
-  DangVien         DangVien @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  TinhTrangSucKhoe String?  @db.VarChar(150) @map("tinhTrangSucKhoe") // 18) Sức khỏe
-  ThuongBinhLoai   String?  @db.VarChar(100) @map("thuongBinhLoai") // Thương binh loại
-  GiaDinhLietSy    Boolean  @default(false) @map("giaDinhLietSy") // Gia đình liệt sỹ
-  GiaDinhCoCong    Boolean  @default(false) @map("giaDinhCoCong") // Gia đình có công với CM
+  dangVienId       String   @id @db.Uuid @map("dangVienId")
+  dangVien         DangVien @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  tinhTrangSucKhoe String?  @db.VarChar(150) @map("tinhTrangSucKhoe") // 18) Sức khỏe
+  thuongBinhLoai   String?  @db.VarChar(100) @map("thuongBinhLoai") // Thương binh loại
+  giaDinhLietSy    Boolean  @default(false) @map("giaDinhLietSy") // Gia đình liệt sỹ
+  giaDinhCoCong    Boolean  @default(false) @map("giaDinhCoCong") // Gia đình có công với CM
 }
 
 // 9. KHEN THƯỞNG KỶ LUẬT (Mục 23, 24, 25, 26)
 model KhenThuongKyLuat {
-  DangVienId        String     @id @db.Uuid @map("dangVienId")
-  DangVien          DangVien   @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  KhenThuong        String?    @map("khenThuong") // 23) Khen thưởng (Có thể viết dài -> text)
-  HuyHieuDang       String?    @db.VarChar(100) @map("huyHieuDang") // 24) Được tặng Huy hiệu Đảng
-  DanhHieuPhongTang String?    @db.VarChar(255) @map("danhHieuPhongTang") // 25) Danh hiệu được phong
-  KyLuat            String?    @map("kyLuat") // 26) Kỷ luật (Có thể viết dài -> text)
-  QuyetDinhId       String?    @db.Uuid @map("quyetDinhId") // Quyết định khen thưởng/kỷ luật (dùng chung cho cả đảng viên)
-  QuyetDinh         QuyetDinh? @relation(fields: [QuyetDinhId], references: [Id], onDelete: SetNull)
+  dangVienId        String     @id @db.Uuid @map("dangVienId")
+  dangVien          DangVien   @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  khenThuong        String?    @map("khenThuong") // 23) Khen thưởng (Có thể viết dài -> text)
+  huyHieuDang       String?    @db.VarChar(100) @map("huyHieuDang") // 24) Được tặng Huy hiệu Đảng
+  danhHieuPhongTang String?    @db.VarChar(255) @map("danhHieuPhongTang") // 25) Danh hiệu được phong
+  kyLuat            String?    @map("kyLuat") // 26) Kỷ luật (Có thể viết dài -> text)
+  quyetDinhId       String?    @db.Uuid @map("quyetDinhId") // Quyết định khen thưởng/kỷ luật
+  quyetDinh         QuyetDinh? @relation(fields: [quyetDinhId], references: [id], onDelete: SetNull)
+
+  @@index([quyetDinhId])
 }
 
 // 10. ĐẶC ĐIỂM LỊCH SỬ VÀ KINH TẾ (Mục 27, 28, 30)
 model DacDiemLyLich {
-  DangVienId      String   @id @db.Uuid @map("dangVienId")
-  DangVien        DangVien @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  LichSuBanThan   Json?    @map("lichSuBanThan") // 27) Đặc điểm lịch sử bản thân
-  QuanHeNuocNgoai Json?    @map("quanHeNuocNgoai") // 28) Quan hệ nước ngoài
-  HoanCanhKinhTe  Json?    @map("hoanCanhKinhTe") // 30) Hoàn cảnh kinh tế
+  dangVienId      String   @id @db.Uuid @map("dangVienId")
+  dangVien        DangVien @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  lichSuBanThan   Json?    @map("lichSuBanThan") // 27) Đặc điểm lịch sử bản thân
+  quanHeNuocNgoai Json?    @map("quanHeNuocNgoai") // 28) Quan hệ nước ngoài
+  hoanCanhKinhTe  Json?    @map("hoanCanhKinhTe") // 30) Hoàn cảnh kinh tế
 }
 
 // 11. QUAN HỆ GIA ĐÌNH (Mục 29)
 model QuanHeGiaDinh {
-  Id         String   @id @default(uuid()) @db.Uuid @map("id")
-  DangVienId String   @db.Uuid @map("dangVienId")
-  DangVien   DangVien @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  QuanHe     String   @db.VarChar(50) @map("quanHe") // Cha, mẹ, vợ, chồng, con, anh, chị, em...
-  HoTen      String   @db.VarChar(100) @map("hoTen") // Họ và tên
-  NamSinh    String   @db.VarChar(20) @map("namSinh") // Năm sinh
-  ThongTin   String?  @map("thongTin") // Tự do dài -> text (Quê quán, nơi ở, nghề nghiệp...)
+  id         String   @id @default(uuid()) @db.Uuid @map("id")
+  dangVienId String   @db.Uuid @map("dangVienId")
+  dangVien   DangVien @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  quanHe     String   @db.VarChar(50) @map("quanHe") // Cha, mẹ, vợ, chồng, con, anh, chị, em...
+  hoTen      String   @db.VarChar(100) @map("hoTen") // Họ và tên
+  namSinh    String   @db.VarChar(20) @map("namSinh") // Năm sinh
+  thongTin   String?  @map("thongTin") // Tự do dài -> text (Quê quán, nơi ở, nghề nghiệp...)
+
+  @@index([dangVienId])
 }
 
 // 12. TÓM TẮT QUÁ TRÌNH HOẠT ĐỘNG (Mục 21)
 model QuaTrinhCongTac {
-  Id               String    @id @default(uuid()) @db.Uuid @map("id")
-  DangVienId       String    @db.Uuid @map("dangVienId")
-  DangVien         DangVien  @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  TuThangNam       DateTime  @db.Date @map("tuThangNam") // Từ tháng, năm (DATE thuần)
-  DenThangNam      DateTime? @db.Date @map("denThangNam") // Đến tháng, năm (DATE thuần)
-  LamGiChucVuDonVi String    @map("lamGiChucVuDonVi") // Tự do dài -> text (Làm gì, chức vụ, đơn vị công tác)
+  id               String    @id @default(uuid()) @db.Uuid @map("id")
+  dangVienId       String    @db.Uuid @map("dangVienId")
+  dangVien         DangVien  @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  tuThangNam       DateTime  @db.Date @map("tuThangNam") // Từ tháng, năm (DATE thuần)
+  denThangNam      DateTime? @db.Date @map("denThangNam") // Đến tháng, năm (DATE thuần)
+  lamGiChucVuDonVi String    @map("lamGiChucVuDonVi") // Tự do dài -> text (Làm gì, chức vụ, đơn vị công tác)
+
+  @@index([dangVienId])
 }
 
 // 13. ĐÀO TẠO BỒI DƯỠNG (Mục 22)
 model QuaTrinhDaoTao {
-  Id              String   @id @default(uuid()) @db.Uuid @map("id")
-  DangVienId      String   @db.Uuid @map("dangVienId")
-  DangVien        DangVien @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  TenTruong       String   @db.VarChar(255) @map("tenTruong") // Tên trường
-  NganhHoc        String   @db.VarChar(255) @map("nganhHoc") // Ngành học hoặc lớp học
-  TuNgay          DateTime @db.Date @map("tuNgay") // Từ ngày (DATE thuần)
-  DenNgay         DateTime @db.Date @map("denNgay") // Đến ngày (DATE thuần)
-  HinhThuc        String   @db.VarChar(100) @map("hinhThuc") // Hình thức học
-  VanBangChungChi String?  @db.VarChar(255) @map("vanBangChungChi") // 22) Văn bằng, chứng chỉ
-  TaiLieuUrl      String?  @db.VarChar(500) @map("taiLieuUrl") // Tệp đính kèm văn bằng
-  TaiLieuName     String?  @db.VarChar(255) @map("taiLieuName") // Tên tệp đính kèm văn bằng
+  id              String   @id @default(uuid()) @db.Uuid @map("id")
+  dangVienId      String   @db.Uuid @map("dangVienId")
+  dangVien        DangVien @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  tenTruong       String   @db.VarChar(255) @map("tenTruong") // Tên trường
+  nganhHoc        String   @db.VarChar(255) @map("nganhHoc") // Ngành học hoặc lớp học
+  tuNgay          DateTime @db.Date @map("tuNgay") // Từ ngày (DATE thuần)
+  denNgay         DateTime @db.Date @map("denNgay") // Đến ngày (DATE thuần)
+  hinhThuc        String   @db.VarChar(100) @map("hinhThuc") // Hình thức học
+  vanBangChungChi String?  @db.VarChar(255) @map("vanBangChungChi") // 22) Văn bằng, chứng chỉ
+  taiLieuUrl      String?  @db.VarChar(500) @map("taiLieuUrl") // Tệp đính kèm văn bằng
+  taiLieuName     String?  @db.VarChar(255) @map("taiLieuName") // Tên tệp đính kèm văn bằng
+
+  @@index([dangVienId])
 }
 
 // 14. PHONG THĂNG QUÂN HÀM
 model LichSuQuanHam {
-  Id          String     @id @default(uuid()) @db.Uuid @map("id")
-  DangVienId  String     @db.Uuid @map("dangVienId")
-  DangVien    DangVien   @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  CapBac      String     @db.VarChar(100) @map("capBac") // Cấp bậc quân hàm
-  ChucVu      String?    @db.VarChar(150) @map("chucVu") // Chức vụ lúc thăng quân hàm
-  DonVi       String     @db.VarChar(255) @map("donVi") // Đơn vị
-  NgayHieuLuc DateTime   @db.Date @map("ngayHieuLuc") // Ngày hiệu lực (DATE thuần)
-  SoQuyetDinh String     @db.VarChar(100) @map("soQuyetDinh") // Số quyết định
-  CreatedAt   DateTime   @default(now()) @map("createdAt")
-  QuyetDinhId String?    @db.Uuid @map("quyetDinhId")
-  QuyetDinh   QuyetDinh? @relation(fields: [QuyetDinhId], references: [Id], onDelete: SetNull)
+  id          String     @id @default(uuid()) @db.Uuid @map("id")
+  dangVienId  String     @db.Uuid @map("dangVienId")
+  dangVien    DangVien   @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  capBac      String     @db.VarChar(100) @map("capBac") // Cấp bậc quân hàm
+  chucVu      String?    @db.VarChar(150) @map("chucVu") // Chức vụ lúc thăng quân hàm
+  donVi       String     @db.VarChar(255) @map("donVi") // Đơn vị
+  ngayHieuLuc DateTime   @db.Date @map("ngayHieuLuc") // Ngày hiệu lực (DATE thuần)
+  soQuyetDinh String     @db.VarChar(100) @map("soQuyetDinh") // Số quyết định
+  createdAt   DateTime   @default(now()) @map("createdAt")
+  quyetDinhId String?    @db.Uuid @map("quyetDinhId")
+  quyetDinh   QuyetDinh? @relation(fields: [quyetDinhId], references: [id], onDelete: SetNull)
+
+  @@index([dangVienId])
+  @@index([quyetDinhId])
 }
 
 // 15. XẾP LOẠI ĐẢNG VIÊN HÀNG NĂM
 model DanhGiaDangVien {
-  Id          String            @id @default(uuid()) @db.Uuid @map("id")
-  DangVienId  String            @db.Uuid @map("dangVienId")
-  DangVien    DangVien          @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  Nam         Int               @map("nam") // Năm đánh giá
-  XepLoai     String            @db.VarChar(100) @map("xepLoai") // Xếp loại
-  NhanXet     String?           @map("nhanXet") // Nhận xét -> text (Có thể viết dài)
-  TrangThai   TrangThaiPheDuyet @default(DRAFT) @map("trangThai")
-  LyDoTuChoi  String?           @map("lyDoTuChoi") // Lý do bị từ chối -> text
-  SoQuyetDinh String?           @db.VarChar(100) @map("soQuyetDinh") // Số quyết định xếp loại
-  QuyetDinhId String?           @db.Uuid @map("quyetDinhId")
-  QuyetDinh   QuyetDinh?        @relation(fields: [QuyetDinhId], references: [Id], onDelete: SetNull)
+  id          String            @id @default(uuid()) @db.Uuid @map("id")
+  dangVienId  String            @db.Uuid @map("dangVienId")
+  dangVien    DangVien          @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  nam         Int               @map("nam") // Năm đánh giá
+  xepLoai     String            @db.VarChar(100) @map("xepLoai") // Xếp loại
+  nhanXet     String?           @map("nhanXet") // Nhận xét -> text (Có thể viết dài)
+  trangThai   TrangThaiPheDuyet @default(DRAFT) @map("trangThai")
+  lyDoTuChoi  String?           @map("lyDoTuChoi") // Lý do bị từ chối -> text
+  soQuyetDinh String?           @db.VarChar(100) @map("soQuyetDinh") // Số quyết định xếp loại
+  quyetDinhId String?           @db.Uuid @map("quyetDinhId")
+  quyetDinh   QuyetDinh?        @relation(fields: [quyetDinhId], references: [id], onDelete: SetNull)
+  createdAt   DateTime          @default(now()) @map("createdAt")
+  updatedAt   DateTime          @default(now()) @updatedAt @map("updatedAt")
+
+  @@unique([dangVienId, nam])
+  @@index([dangVienId])
+  @@index([nam, trangThai])
+  @@index([quyetDinhId])
 }
 
 // 16. NHẬT KÝ HỆ THỐNG (Audit Log)
 model NhatKyHeThong {
-  Id          Int       @id @default(autoincrement()) @map("id") // ID số tự tăng để tránh phân mảnh B-Tree
-  NguoiDungId String    @db.Uuid @map("nguoiDungId")
-  NguoiDung   NguoiDung @relation(fields: [NguoiDungId], references: [Id])
-  HanhDong    String    @db.VarChar(50) @map("hanhDong") // CREATE, UPDATE, DELETE...
-  TenBang     String    @db.VarChar(100) @map("tenBang") // Tên bảng
-  BanGhiId    String    @db.VarChar(100) @map("banGhiId") // ID bản ghi
-  GiaTriCu    Json?     @map("giaTriCu")
-  GiaTriMoi   Json?     @map("giaTriMoi")
-  DiaChiIp    String?   @db.VarChar(50) @map("diaChiIp") // IP address người thực hiện
-  CreatedAt   DateTime  @default(now()) @map("createdAt")
+  id          Int       @id @default(autoincrement()) @map("id") // ID số tự tăng để tránh phân mảnh B-Tree
+  nguoiDungId String    @db.Uuid @map("nguoiDungId")
+  nguoiDung   NguoiDung @relation(fields: [nguoiDungId], references: [id])
+  hanhDong    String    @db.VarChar(50) @map("hanhDong") // CREATE, UPDATE, DELETE...
+  tenBang     String    @db.VarChar(100) @map("tenBang") // Tên bảng
+  banGhiId    String    @db.VarChar(100) @map("banGhiId") // ID bản ghi
+  giaTriCu    Json?     @map("giaTriCu")
+  giaTriMoi   Json?     @map("giaTriMoi")
+  diaChiIp    String?   @db.VarChar(50) @map("diaChiIp") // IP address người thực hiện
+  createdAt   DateTime  @default(now()) @map("createdAt")
+
+  @@index([nguoiDungId])
+  @@index([tenBang])
+  @@index([createdAt])
 }
 
 // 17. TÀI LIỆU ĐÍNH KÈM (PDF, Ảnh, Scan quyết định, bằng cấp, chỉ thị...)
 model TaiLieuDinhKem {
-  Id          String      @id @default(uuid()) @db.Uuid @map("id")
-  DangVienId  String      @db.Uuid @map("dangVienId")
-  DangVien    DangVien    @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  TenTaiLieu  String      @db.VarChar(255) @map("tenTaiLieu") // Tên tài liệu
-  LoaiTaiLieu LoaiTaiLieu @map("loaiTaiLieu")
-  FileUrl     String      @db.VarChar(500) @map("fileUrl") // Đường dẫn file hoặc URL tải xuống
-  FileType    String      @db.VarChar(10) @map("fileType") // pdf, png, jpg, jpeg
-  CreatedAt   DateTime    @default(now()) @map("createdAt")
-  DeletedAt   DateTime?   @map("deletedAt")
-  DeletedBy   String?     @db.VarChar(50) @map("deletedBy")
+  id          String      @id @default(uuid()) @db.Uuid @map("id")
+  dangVienId  String      @db.Uuid @map("dangVienId")
+  dangVien    DangVien    @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  tenTaiLieu  String      @db.VarChar(255) @map("tenTaiLieu") // Tên tài liệu
+  loaiTaiLieu LoaiTaiLieu @map("loaiTaiLieu")
+  fileUrl     String      @db.VarChar(500) @map("fileUrl") // Đường dẫn file hoặc URL tải xuống
+  fileType    String      @db.VarChar(30) @map("fileType") // pdf, png, jpg, jpeg, docx...
+  createdAt   DateTime    @default(now()) @map("createdAt")
+  deletedAt   DateTime?   @map("deletedAt")
+  deletedBy   String?     @db.VarChar(50) @map("deletedBy")
+
+  @@index([dangVienId, deletedAt])
 }
 
 // 18. THÔNG BÁO HỆ THỐNG (In-app Notifications)
 model ThongBao {
-  Id          Int          @id @default(autoincrement()) @map("id") // ID số tự tăng
-  NguoiNhanId String       @db.Uuid @map("nguoiNhanId")
-  NguoiNhan   NguoiDung    @relation("ThongBaoNhan", fields: [NguoiNhanId], references: [Id])
-  NguoiGuiId  String?      @db.Uuid @map("nguoiGuiId")
-  NguoiGui    NguoiDung?   @relation("ThongBaoGui", fields: [NguoiGuiId], references: [Id])
-  Loai        LoaiThongBao @map("loai")
-  TieuDe      String       @db.VarChar(255) @map("tieuDe") // Tiêu đề ngắn gọn
-  NoiDung     String       @map("noiDung") // Nội dung chi tiết -> text
-  DuongDan    String?      @db.VarChar(255) @map("duongDan") // Đường dẫn điều hướng
-  DaDoc       Boolean      @default(false) @map("daDoc")
-  Metadata    Json?        @map("metadata") // Dữ liệu bổ sung (orgId, year, ...)
-  CreatedAt   DateTime     @default(now()) @map("createdAt")
-  DeletedAt   DateTime?    @map("deletedAt")
-  DeletedBy   String?      @db.VarChar(50) @map("deletedBy")
+  id          Int          @id @default(autoincrement()) @map("id") // ID số tự tăng
+  nguoiNhanId String       @db.Uuid @map("nguoiNhanId")
+  nguoiNhan   NguoiDung    @relation("ThongBaoNhan", fields: [nguoiNhanId], references: [id])
+  nguoiGuiId  String?      @db.Uuid @map("nguoiGuiId")
+  nguoiGui    NguoiDung?   @relation("ThongBaoGui", fields: [nguoiGuiId], references: [id])
+  loai        LoaiThongBao @map("loai")
+  tieuDe      String       @db.VarChar(255) @map("tieuDe") // Tiêu đề ngắn gọn
+  noiDung     String       @map("noiDung") // Nội dung chi tiết -> text
+  duongDan    String?      @db.VarChar(255) @map("duongDan") // Đường dẫn điều hướng
+  daDoc       Boolean      @default(false) @map("daDoc")
+  metadata    Json?        @map("metadata") // Dữ liệu bổ sung (orgId, year, ...)
+  createdAt   DateTime     @default(now()) @map("createdAt")
+  deletedAt   DateTime?    @map("deletedAt")
+  deletedBy   String?      @db.VarChar(50) @map("deletedBy")
+
+  @@index([nguoiNhanId, daDoc, createdAt])
 }
 
 // 19. ĐỀ XUẤT HUY HIỆU ĐẢNG
 model DeXuatHuyHieu {
-  Id                String            @id @default(uuid()) @db.Uuid @map("id")
-  DangVienId        String            @db.Uuid @map("dangVienId")
-  DangVien          DangVien          @relation(fields: [DangVienId], references: [Id], onDelete: Cascade)
-  LoaiDeXuat        LoaiDeXuatHuyHieu @map("loaiDeXuat")
-  MocHuyHieu        Int               @map("mocHuyHieu") // 30, 40, 45, 50, 55, 60, 65, 70, 75, 80
-  TrangThai         TrangThaiPheDuyet @default(PENDING) @map("trangThai")
-  SoHuyHieu         String?           @db.VarChar(50) @map("soHuyHieu")
-  SoQuyetDinhCaNhan String?           @db.VarChar(100) @map("soQuyetDinhCaNhan")
-  SoQuyetDinhTapThe String?           @db.VarChar(100) @map("soQuyetDinhTapThe")
-  NgayQuyetDinh     DateTime?         @db.Date @map("ngayQuyetDinh") // DATE thuần
-  LyDoTuChoi        String?           @map("lyDoTuChoi") // Ly do từ chối -> text
-  NguoiDeXuatId     String?           @db.VarChar(100) @map("nguoiDeXuatId")
-  NguoiDuyetId      String?           @db.VarChar(100) @map("nguoiDuyetId")
-  QuyetDinhId       String?           @db.Uuid @map("quyetDinhId")
-  QuyetDinh         QuyetDinh?        @relation(fields: [QuyetDinhId], references: [Id], onDelete: SetNull)
-  CreatedAt         DateTime          @default(now()) @map("createdAt")
-  UpdatedAt         DateTime          @updatedAt @map("updatedAt")
+  id                String            @id @default(uuid()) @db.Uuid @map("id")
+  dangVienId        String            @db.Uuid @map("dangVienId")
+  dangVien          DangVien          @relation(fields: [dangVienId], references: [id], onDelete: Cascade)
+  loaiDeXuat        LoaiDeXuatHuyHieu @map("loaiDeXuat")
+  mocHuyHieu        Int               @map("mocHuyHieu") // 30, 40, 45, 50, 55, 60, 65, 70, 75, 80
+  trangThai         TrangThaiPheDuyet @default(PENDING) @map("trangThai")
+  soHuyHieu         String?           @db.VarChar(50) @map("soHuyHieu")
+  soQuyetDinhCaNhan String?           @db.VarChar(100) @map("soQuyetDinhCaNhan")
+  soQuyetDinhTapThe String?           @db.VarChar(100) @map("soQuyetDinhTapThe")
+  ngayQuyetDinh     DateTime?         @db.Date @map("ngayQuyetDinh") // DATE thuần
+  lyDoTuChoi        String?           @map("lyDoTuChoi") // Ly do từ chối -> text
+  nguoiDeXuatId     String?           @db.VarChar(100) @map("nguoiDeXuatId")
+  nguoiDuyetId      String?           @db.VarChar(100) @map("nguoiDuyetId")
+  quyetDinhId       String?           @db.Uuid @map("quyetDinhId")
+  quyetDinh         QuyetDinh?        @relation(fields: [quyetDinhId], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now()) @map("createdAt")
+  updatedAt         DateTime          @updatedAt @map("updatedAt")
+
+  @@index([dangVienId])
+  @@index([trangThai, mocHuyHieu])
+  @@index([quyetDinhId])
 }
 
-// 20. QUẢN LÝ QUYẾT ĐỊNH (Khen thưởng, Thăng hàm, Huy hiệu Đảng)
+// 20. QUẢN LÝ QUYẾT ĐỊNH (Khen thưởng, Thăng hàm, Huy hiệu Đảng, Xếp loại, Kỷ luật)
 model QuyetDinh {
-  Id                String             @id @default(uuid()) @db.Uuid @map("id")
-  SoQuyetDinh       String             @unique @db.VarChar(100) @map("soQuyetDinh")
-  TenQuyetDinh      String?            @db.VarChar(255) @map("tenQuyetDinh")
-  LoaiQuyetDinh     LoaiQuyetDinh      @map("loaiQuyetDinh")
-  NgayBanHanh       DateTime           @db.Date @map("ngayBanHanh") // DATE thuần
-  TaiLieuUrl        String?            @db.VarChar(500) @map("taiLieuUrl")
-  TaiLieuName       String?            @db.VarChar(255) @map("taiLieuName")
-  CreatedAt         DateTime           @default(now()) @map("createdAt")
-  UpdatedAt         DateTime           @updatedAt @map("updatedAt")
-  DanhGiaDangViens  DanhGiaDangVien[]
-  LichSuQuanHams    LichSuQuanHam[]
-  DeXuatHuyHieus    DeXuatHuyHieu[]
-  KhenThuongKyLuats KhenThuongKyLuat[]
+  id                String             @id @default(uuid()) @db.Uuid @map("id")
+  soQuyetDinh       String             @unique @db.VarChar(100) @map("soQuyetDinh")
+  tenQuyetDinh      String?            @db.VarChar(255) @map("tenQuyetDinh")
+  loaiQuyetDinh     LoaiQuyetDinh      @map("loaiQuyetDinh")
+  ngayBanHanh       DateTime           @db.Date @map("ngayBanHanh") // DATE thuần
+  taiLieuUrl        String?            @db.VarChar(500) @map("taiLieuUrl")
+  taiLieuName       String?            @db.VarChar(255) @map("taiLieuName")
+  createdAt         DateTime           @default(now()) @map("createdAt")
+  updatedAt         DateTime           @updatedAt @map("updatedAt")
+  danhGiaDangViens  DanhGiaDangVien[]
+  lichSuQuanHams    LichSuQuanHam[]
+  deXuatHuyHieus    DeXuatHuyHieu[]
+  khenThuongKyLuats KhenThuongKyLuat[]
+
+  @@index([loaiQuyetDinh, ngayBanHanh])
 }

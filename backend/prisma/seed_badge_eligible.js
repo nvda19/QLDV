@@ -98,98 +98,121 @@ function buildEvaluations() {
 
 async function createFullMember(m, orgId) {
   const dv = await prisma.dangVien.create({
-    data: { ToChucDangId: orgId, SoLyLich: m.SoTheDangVien, SoTheDangVien: m.SoTheDangVien, TrangThai: "HOAT_DONG" },
+    data: { toChucDangId: orgId, soLyLich: m.SoTheDangVien, soTheDangVien: m.SoTheDangVien, trangThai: "HOAT_DONG" },
   });
-  const dvId = dv.Id;
+  const dvId = dv.id || dv.Id;
   const by = yr(m.NgaySinh);
   const jy = yr(m.NgayVaoDang);
 
   await prisma.lyLichCaNhan.create({
     data: {
-      DangVienId: dvId,
-      HoTenDangDung: m.HoTen, HoTenKhaiSinh: m.HoTen, GioiTinh: m.GioiTinh,
-      NgaySinh: new Date(m.NgaySinh), NoiSinh: "Hà Nội", QueQuan: "Hà Nội",
-      NoiThuongTru: "Số 236 Hoàng Quốc Việt, Bắc Từ Liêm, Hà Nội",
-      NoiTamTru: "Số 236 Hoàng Quốc Việt, Bắc Từ Liêm, Hà Nội",
-      DanToc: "Kinh", TonGiao: "Không", ThanhPhanGiaDinh: "Cán bộ, công chức",
-      NgheNghiepHienNay: "Sĩ quan Quân đội", NgheNghiepKhiVaoDang: "Quân nhân",
+      dangVienId: dvId,
+      hoTenDangDung: m.HoTen, hoTenKhaiSinh: m.HoTen, gioiTinh: m.GioiTinh,
+      ngaySinh: new Date(m.NgaySinh), noiSinh: "Hà Nội", queQuan: "Hà Nội",
+      noiThuongTru: "Số 236 Hoàng Quốc Việt, Bắc Từ Liêm, Hà Nội",
+      noiTamTru: "Số 236 Hoàng Quốc Việt, Bắc Từ Liêm, Hà Nội",
+      danToc: "Kinh", tonGiao: "Không", thanhPhanGiaDinh: "Cán bộ, công chức",
+      ngheNghiepHienNay: "Sĩ quan Quân đội", ngheNghiepKhiVaoDang: "Quân nhân",
     },
   });
 
   await prisma.thongTinVaoDang.create({
     data: {
-      DangVienId: dvId,
-      NgayVaoDang: new Date(m.NgayVaoDang), ChiBoVaoDang: m.chiBo,
-      NguoiGioiThieu1: "Đồng chí Bí thư chi bộ", ChucVuNGT1: "Bí thư chi bộ",
-      NguoiGioiThieu2: "Đồng chí đảng viên chính thức", ChucVuNGT2: "Đảng viên chính thức",
-      NgayQuyetDinhKetNap: new Date(m.NgayVaoDang),
-      NgayChinhThuc: new Date(`${jy + 1}${m.NgayVaoDang.slice(4)}`),
-      ChiBoChinhThuc: m.chiBo, NoiSinhHoatDang: m.chiBo, ChucVuDang: "Đảng viên",
-      NgayVaoDoan: new Date(d(by + 15, 3, 26)), ToChucXaHoi: "Không",
+      dangVienId: dvId,
+      ngayVaoDang: new Date(m.NgayVaoDang), chiBoVaoDang: m.chiBo,
+      nguoiGioiThieu1: "Đồng chí Bí thư chi bộ", chucVuNGT1: "Bí thư chi bộ",
+      nguoiGioiThieu2: "Đồng chí đảng viên chính thức", chucVuNGT2: "Đảng viên chính thức",
+      ngayQuyetDinhKetNap: new Date(m.NgayVaoDang),
+      ngayChinhThuc: new Date(`${jy + 1}${m.NgayVaoDang.slice(4)}`),
+      chiBoChinhThuc: m.chiBo, noiSinhHoatDang: m.chiBo, chucVuDang: "Đảng viên",
+      ngayVaoDoan: new Date(d(by + 15, 3, 26)), toChucXaHoi: "Không",
     },
   });
 
   await prisma.trinhDoHocVan.create({
     data: {
-      DangVienId: dvId, GiaoDucPhoThong: "12/12", GiaoDucDaiHoc: "Cử nhân/Kỹ sư",
-      HocVi: "Cử nhân/Kỹ sư", LyLuanChinhTri: "Cao cấp", NgoaiNgu: "Tiếng Anh B1", TinHoc: "Thành thạo",
+      dangVienId: dvId, giaoDucPhoThong: "12/12", giaoDucDaiHoc: "Cử nhân/Kỹ sư",
+      hocVi: "Cử nhân/Kỹ sư", lyLuanChinhTri: "Cao cấp", ngoaiNgu: "Tiếng Anh B1", tinHoc: "Thành thạo",
     },
   });
 
   await prisma.tuyenDungQuanNgu.create({
     data: {
-      DangVienId: dvId, NgayNhapNgu: new Date(d(by + 18, 9, 1)),
-      CapBac: m.CapBac, CongViecChinh: "Giảng dạy, nghiên cứu khoa học quân sự", CoQuanTuyenDung: "Học viện Khoa học Quân sự",
+      dangVienId: dvId, ngayNhapNgu: new Date(d(by + 18, 9, 1)),
+      capBac: m.CapBac, congViecChinh: "Giảng dạy, nghiên cứu khoa học quân sự", coQuanTuyenDung: "Học viện Khoa học Quân sự",
     },
   });
 
   await prisma.sucKhoeChinhSach.create({
-    data: { DangVienId: dvId, TinhTrangSucKhoe: "Tốt (Loại 1)", GiaDinhCoCong: true },
+    data: { dangVienId: dvId, tinhTrangSucKhoe: "Tốt (Loại 1)", giaDinhCoCong: true },
   });
 
   // Mấu chốt: HuyHieuDang = "Chưa" → đủ điều kiện nhưng CHƯA được trao
   await prisma.khenThuongKyLuat.create({
     data: {
-      DangVienId: dvId, KhenThuong: "Nhiều Bằng khen của Bộ Quốc phòng và đơn vị",
-      HuyHieuDang: "Chưa", DanhHieuPhongTang: "Chiến sĩ thi đua", KyLuat: "Không",
+      dangVienId: dvId, khenThuong: "Nhiều Bằng khen của Bộ Quốc phòng và đơn vị",
+      huyHieuDang: "Chưa", danhHieuPhongTang: "Chiến sĩ thi đua", kyLuat: "Không",
     },
   });
 
   await prisma.dacDiemLyLich.create({
     data: {
-      DangVienId: dvId,
-      LichSuBanThan: { bixoaten: "Không", ketNapLai: "Không", khoiPhucDangTich: "Không", xuLyPhapLuat: "Không", cheDocU: "Không" },
-      QuanHeNuocNgoai: { foreignTravel: "Không", foreignOrgs: "Không", foreignRelatives: "Không" },
-      HoanCanhKinhTe: { totalIncome: "240.000.000đ/năm", perCapitaIncome: "60.000.000đ/năm", houseOwned: "Có (nhà ở Hà Nội)", landOwned: "Không", economicActivity: "Lương và phụ cấp", valuableAssets: "Không" },
+      dangVienId: dvId,
+      lichSuBanThan: { bixoaten: "Không", ketNapLai: "Không", khoiPhucDangTich: "Không", xuLyPhapLuat: "Không", cheDocU: "Không" },
+      quanHeNuocNgoai: { foreignTravel: "Không", foreignOrgs: "Không", foreignRelatives: "Không" },
+      hoanCanhKinhTe: { totalIncome: "240.000.000đ/năm", perCapitaIncome: "60.000.000đ/năm", houseOwned: "Có (nhà ở Hà Nội)", landOwned: "Không", economicActivity: "Lương và phụ cấp", valuableAssets: "Không" },
     },
   });
 
-  await prisma.quanHeGiaDinh.createMany({ data: buildFamily(m).map((x) => ({ DangVienId: dvId, ...x })) });
+  await prisma.quanHeGiaDinh.createMany({
+    data: buildFamily(m).map((x) => ({
+      dangVienId: dvId,
+      quanHe: x.QuanHe,
+      hoTen: x.HoTen,
+      namSinh: x.NamSinh,
+      thongTin: x.ThongTin,
+    })),
+  });
 
   await prisma.quaTrinhCongTac.createMany({
     data: buildCareer(m).map((x) => ({
-      DangVienId: dvId, TuThangNam: new Date(x.TuThangNam),
-      DenThangNam: x.DenThangNam ? new Date(x.DenThangNam) : null, LamGiChucVuDonVi: x.LamGiChucVuDonVi,
+      dangVienId: dvId,
+      tuThangNam: new Date(x.TuThangNam),
+      denThangNam: x.DenThangNam ? new Date(x.DenThangNam) : null,
+      lamGiChucVuDonVi: x.LamGiChucVuDonVi,
     })),
   });
 
   await prisma.quaTrinhDaoTao.createMany({
     data: buildTraining(m).map((x) => ({
-      DangVienId: dvId, TenTruong: x.TenTruong, NganhHoc: x.NganhHoc,
-      TuNgay: new Date(x.TuNgay), DenNgay: new Date(x.DenNgay), HinhThuc: x.HinhThuc, VanBangChungChi: x.VanBangChungChi,
+      dangVienId: dvId,
+      tenTruong: x.TenTruong,
+      nganhHoc: x.NganhHoc,
+      tuNgay: new Date(x.TuNgay),
+      denNgay: new Date(x.DenNgay),
+      hinhThuc: x.HinhThuc,
+      vanBangChungChi: x.VanBangChungChi,
     })),
   });
 
   await prisma.lichSuQuanHam.createMany({
     data: buildRankHistory(m).map((x) => ({
-      DangVienId: dvId, CapBac: x.CapBac, ChucVu: x.ChucVu, DonVi: x.DonVi,
-      NgayHieuLuc: new Date(x.NgayHieuLuc), SoQuyetDinh: x.SoQuyetDinh,
+      dangVienId: dvId,
+      capBac: x.CapBac,
+      chucVu: x.ChucVu,
+      donVi: x.DonVi,
+      ngayHieuLuc: new Date(x.NgayHieuLuc),
+      soQuyetDinh: x.SoQuyetDinh,
     })),
   });
 
   await prisma.danhGiaDangVien.createMany({
     data: buildEvaluations().map((x) => ({
-      DangVienId: dvId, Nam: x.Nam, XepLoai: x.XepLoai, NhanXet: x.NhanXet, TrangThai: x.TrangThai,
+      dangVienId: dvId,
+      nam: x.Nam,
+      xepLoai: x.XepLoai,
+      nhanXet: x.NhanXet,
+      trangThai: x.TrangThai,
     })),
   });
 
@@ -199,12 +222,12 @@ async function createFullMember(m, orgId) {
 async function main() {
   console.log("🎖️  Seed bổ sung (FULL): đảng viên đủ điều kiện Huy hiệu Đảng, chưa được trao (Học viện Khoa học Quân sự)...");
 
-  const orgs = await prisma.toChucDang.findMany({ select: { Id: true, Ten: true } });
-  const orgByName = new Map(orgs.map((o) => [o.Ten, o.Id]));
+  const orgs = await prisma.toChucDang.findMany({ select: { id: true, ten: true } });
+  const orgByName = new Map(orgs.map((o) => [o.ten, o.id]));
 
   // ADDITIVE: chỉ tạo những hồ sơ HHD-* chưa tồn tại (giữ nguyên dữ liệu/đề nghị cũ).
-  const existing = await prisma.dangVien.findMany({ where: { SoTheDangVien: { startsWith: "HHD-" } }, select: { SoTheDangVien: true } });
-  const existingSet = new Set(existing.map((e) => e.SoTheDangVien));
+  const existing = await prisma.dangVien.findMany({ where: { soTheDangVien: { startsWith: "HHD-" } }, select: { soTheDangVien: true } });
+  const existingSet = new Set(existing.map((e) => e.soTheDangVien));
 
   let created = 0;
   let skipped = 0;

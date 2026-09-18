@@ -2,6 +2,68 @@ const prisma = require("../infrastructure/database/prisma");
 const { ROLES } = require("../domain/constants/member.constants");
 
 /**
+ * Gắn alias PascalCase lên object người dùng để tương thích ngược
+ * @param {Object} u 
+ * @returns {Object}
+ */
+function attachUserAliases(u) {
+  if (!u) return null;
+  u.Id = u.id;
+  u.TenDangNhap = u.tenDangNhap;
+  u.MatKhauHash = u.matKhauHash;
+  u.VaiTro = u.vaiTro;
+  u.ToChucDangId = u.toChucDangId;
+  u.HoTen = u.hoTen;
+  u.TrangThai = u.trangThai;
+  u.SoLanSaiMatKhau = u.soLanSaiMatKhau;
+  u.YeuCauDoiMatKhau = u.yeuCauDoiMatKhau;
+  u.RefreshToken = u.refreshToken;
+  u.CreatedAt = u.createdAt;
+  if (u.toChucDang) {
+    u.toChucDang.Id = u.toChucDang.id;
+    u.toChucDang.Ten = u.toChucDang.ten;
+    u.toChucDang.ToChucChaId = u.toChucDang.toChucChaId;
+    u.ToChucDang = u.toChucDang;
+  }
+  return u;
+}
+
+/**
+ * Chuyển đổi payload data sang camelCase cho Prisma
+ */
+function mapUserDataToDb(data = {}) {
+  const mapped = {};
+  if (data.tenDangNhap !== undefined || data.TenDangNhap !== undefined) {
+    mapped.tenDangNhap = data.tenDangNhap !== undefined ? data.tenDangNhap : data.TenDangNhap;
+  }
+  if (data.matKhauHash !== undefined || data.MatKhauHash !== undefined) {
+    mapped.matKhauHash = data.matKhauHash !== undefined ? data.matKhauHash : data.MatKhauHash;
+  }
+  if (data.hoTen !== undefined || data.HoTen !== undefined) {
+    mapped.hoTen = data.hoTen !== undefined ? data.hoTen : data.HoTen;
+  }
+  if (data.vaiTro !== undefined || data.VaiTro !== undefined) {
+    mapped.vaiTro = data.vaiTro !== undefined ? data.vaiTro : data.VaiTro;
+  }
+  if (data.toChucDangId !== undefined || data.ToChucDangId !== undefined) {
+    mapped.toChucDangId = data.toChucDangId !== undefined ? data.toChucDangId : data.ToChucDangId;
+  }
+  if (data.trangThai !== undefined || data.TrangThai !== undefined) {
+    mapped.trangThai = data.trangThai !== undefined ? data.trangThai : data.TrangThai;
+  }
+  if (data.soLanSaiMatKhau !== undefined || data.SoLanSaiMatKhau !== undefined) {
+    mapped.soLanSaiMatKhau = data.soLanSaiMatKhau !== undefined ? data.soLanSaiMatKhau : data.SoLanSaiMatKhau;
+  }
+  if (data.yeuCauDoiMatKhau !== undefined || data.YeuCauDoiMatKhau !== undefined) {
+    mapped.yeuCauDoiMatKhau = data.yeuCauDoiMatKhau !== undefined ? data.yeuCauDoiMatKhau : data.YeuCauDoiMatKhau;
+  }
+  if (data.refreshToken !== undefined || data.RefreshToken !== undefined) {
+    mapped.refreshToken = data.refreshToken !== undefined ? data.refreshToken : data.RefreshToken;
+  }
+  return mapped;
+}
+
+/**
  * Repository cho bảng người dùng
  */
 class UserRepository {
@@ -14,31 +76,33 @@ class UserRepository {
     const { search, role, status, orgId } = filters;
     const where = {};
 
-    if (role) where.VaiTro = role;
-    if (status) where.TrangThai = status;
-    if (orgId) where.ToChucDangId = orgId;
+    if (role) where.vaiTro = role;
+    if (status) where.trangThai = status;
+    if (orgId) where.toChucDangId = orgId;
 
     if (search) {
       where.OR = [
-        { TenDangNhap: { contains: search, mode: "insensitive" } },
-        { HoTen: { contains: search, mode: "insensitive" } },
+        { tenDangNhap: { contains: search, mode: "insensitive" } },
+        { hoTen: { contains: search, mode: "insensitive" } },
       ];
     }
 
-    return prisma.nguoiDung.findMany({
+    const users = await prisma.nguoiDung.findMany({
       where,
       include: {
-        ToChucDang: {
+        toChucDang: {
           select: {
-            Id: true,
-            Ten: true,
+            id: true,
+            ten: true,
           },
         },
       },
       orderBy: {
-        CreatedAt: "desc",
+        createdAt: "desc",
       },
     });
+
+    return users.map(attachUserAliases);
   }
 
   /**
@@ -48,10 +112,11 @@ class UserRepository {
    * @returns {Promise<Object|null>} Đối tượng người dùng hoặc null nếu không tìm thấy
    */
   async findById(id, includeOrg = false) {
-    return prisma.nguoiDung.findUnique({
-      where: { Id: id },
-      include: includeOrg ? { ToChucDang: true } : undefined,
+    const user = await prisma.nguoiDung.findUnique({
+      where: { id },
+      include: includeOrg ? { toChucDang: true } : undefined,
     });
+    return attachUserAliases(user);
   }
 
   /**
@@ -60,9 +125,10 @@ class UserRepository {
    * @returns {Promise<Object|null>} Đối tượng người dùng hoặc null nếu không tìm thấy
    */
   async findByUsername(username) {
-    return prisma.nguoiDung.findUnique({
-      where: { TenDangNhap: username },
+    const user = await prisma.nguoiDung.findUnique({
+      where: { tenDangNhap: username },
     });
+    return attachUserAliases(user);
   }
 
   /**
@@ -71,12 +137,13 @@ class UserRepository {
    * @returns {Promise<Object>} Đối tượng tài khoản đã tạo
    */
   async create(data) {
-    return prisma.nguoiDung.create({
-      data,
+    const user = await prisma.nguoiDung.create({
+      data: mapUserDataToDb(data),
       include: {
-        ToChucDang: true,
+        toChucDang: true,
       },
     });
+    return attachUserAliases(user);
   }
 
   /**
@@ -86,13 +153,14 @@ class UserRepository {
    * @returns {Promise<Object>} Đối tượng tài khoản đã cập nhật
    */
   async update(id, data) {
-    return prisma.nguoiDung.update({
-      where: { Id: id },
-      data,
+    const user = await prisma.nguoiDung.update({
+      where: { id },
+      data: mapUserDataToDb(data),
       include: {
-        ToChucDang: true,
+        toChucDang: true,
       },
     });
+    return attachUserAliases(user);
   }
 
   /**
@@ -101,41 +169,41 @@ class UserRepository {
    * @returns {Promise<Object>} Đối tượng tài khoản đã xóa
    */
   async delete(id) {
-    return prisma.nguoiDung.delete({
-      where: { Id: id },
+    const user = await prisma.nguoiDung.delete({
+      where: { id },
     });
+    return attachUserAliases(user);
   }
 
   /**
    * Tăng số lần đăng nhập sai mật khẩu
-   * Lưu ý: tự động khóa tài khoản (`TrangThai = LOCKED`) khi số lần sai đạt ngưỡng 5,
-   * để chặn tấn công brute-force khi đăng nhập.
    * @param {string} id ID của tài khoản
    * @returns {Promise<Object>} Đối tượng tài khoản sau khi cập nhật (có thể đã bị khóa)
    */
   async incrementFailedAttempts(id) {
     const updatedUser = await prisma.nguoiDung.update({
-      where: { Id: id },
+      where: { id },
       data: {
-        SoLanSaiMatKhau: {
+        soLanSaiMatKhau: {
           increment: 1,
         },
       },
-      include: { ToChucDang: true },
+      include: { toChucDang: true },
     });
 
     if (
-      updatedUser.SoLanSaiMatKhau >= 5 &&
-      updatedUser.TrangThai !== "LOCKED"
+      updatedUser.soLanSaiMatKhau >= 5 &&
+      updatedUser.trangThai !== "LOCKED"
     ) {
-      return prisma.nguoiDung.update({
-        where: { Id: id },
-        data: { TrangThai: "LOCKED" },
-        include: { ToChucDang: true },
+      const lockedUser = await prisma.nguoiDung.update({
+        where: { id },
+        data: { trangThai: "LOCKED" },
+        include: { toChucDang: true },
       });
+      return attachUserAliases(lockedUser);
     }
 
-    return updatedUser;
+    return attachUserAliases(updatedUser);
   }
 
   /**
@@ -144,10 +212,10 @@ class UserRepository {
    */
   async findPoliticalOfficerIds() {
     const users = await prisma.nguoiDung.findMany({
-      where: { VaiTro: ROLES.CAN_BO_CHINH_TRI, TrangThai: "ACTIVE" },
-      select: { Id: true },
+      where: { vaiTro: ROLES.CAN_BO_CHINH_TRI, trangThai: "ACTIVE" },
+      select: { id: true },
     });
-    return users.map((u) => u.Id);
+    return users.map((u) => u.id);
   }
 
   /**
@@ -157,10 +225,10 @@ class UserRepository {
    */
   async findSecretaryOfOrgIds(orgId) {
     const users = await prisma.nguoiDung.findMany({
-      where: { VaiTro: ROLES.BI_THU, ToChucDangId: orgId, TrangThai: "ACTIVE" },
-      select: { Id: true },
+      where: { vaiTro: ROLES.BI_THU, toChucDangId: orgId, trangThai: "ACTIVE" },
+      select: { id: true },
     });
-    return users.map((u) => u.Id);
+    return users.map((u) => u.id);
   }
 }
 

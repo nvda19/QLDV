@@ -6,22 +6,19 @@ const prisma = require("../infrastructure/database/prisma");
 class AuditRepository {
   /**
    * Tạo nhật ký hệ thống
-   * Lưu ý: dùng để ghi log thủ công (qua `infrastructure/audit/auditLogger.logAction`) cho các
-   * thao tác không phải CRUD chuẩn; log CRUD trên các model thuộc `AUDITED_MODELS` đã được
-   * Prisma extension tự động ghi, không cần gọi repository này.
    * @param {Object} data Dữ liệu nhật ký hệ thống
    * @returns {Promise<Object>} Bản ghi nhật ký hệ thống vừa tạo
    */
   async create(data) {
     return prisma.nhatKyHeThong.create({
       data: {
-        NguoiDungId: data.userId,
-        HanhDong: data.action,
-        TenBang: data.tableName,
-        BanGhiId: data.recordId,
-        GiaTriCu: data.oldValue || undefined,
-        GiaTriMoi: data.newValue || undefined,
-        DiaChiIp: data.ipAddress || undefined,
+        nguoiDungId: data.userId || data.nguoiDungId || data.NguoiDungId,
+        hanhDong: data.action || data.hanhDong || data.HanhDong,
+        tenBang: data.tableName || data.tenBang || data.TenBang,
+        banGhiId: String(data.recordId !== undefined ? data.recordId : data.banGhiId !== undefined ? data.banGhiId : data.BanGhiId),
+        giaTriCu: data.oldValue !== undefined ? data.oldValue : data.giaTriCu !== undefined ? data.giaTriCu : data.GiaTriCu || undefined,
+        giaTriMoi: data.newValue !== undefined ? data.newValue : data.giaTriMoi !== undefined ? data.giaTriMoi : data.GiaTriMoi || undefined,
+        diaChiIp: data.ipAddress || data.diaChiIp || data.DiaChiIp || undefined,
       },
     });
   }

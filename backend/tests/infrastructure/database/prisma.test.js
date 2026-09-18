@@ -86,18 +86,18 @@ describe("Prisma Soft Delete Client Extension", () => {
 
   describe("DangVien Model (Soft Delete Enabled)", () => {
     test("delete -> chuyển đổi thành update soft delete", async () => {
-      mockBasePrisma.dangVien.update.mockResolvedValueOnce({ Id: "m1", DeletedAt: new Date() });
+      mockBasePrisma.dangVien.update.mockResolvedValueOnce({ id: "m1", deletedAt: new Date() });
 
       const result = await prisma.dangVien.delete({
-        where: { Id: "m1" },
+        where: { id: "m1" },
       });
 
       expect(mockBasePrisma.dangVien.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { Id: "m1" },
+          where: { id: "m1" },
           data: expect.objectContaining({
-            DeletedAt: expect.any(Date),
-            DeletedBy: "system",
+            deletedAt: expect.any(Date),
+            deletedBy: "system",
           }),
         })
       );
@@ -107,54 +107,54 @@ describe("Prisma Soft Delete Client Extension", () => {
       mockBasePrisma.dangVien.updateMany.mockResolvedValueOnce({ count: 2 });
 
       const result = await prisma.dangVien.deleteMany({
-        where: { ToChucDangId: "org1" },
+        where: { toChucDangId: "org1" },
       });
 
       expect(mockBasePrisma.dangVien.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { ToChucDangId: "org1" },
+          where: { toChucDangId: "org1" },
           data: expect.objectContaining({
-            DeletedAt: expect.any(Date),
-            DeletedBy: "system",
+            deletedAt: expect.any(Date),
+            deletedBy: "system",
           }),
         })
       );
     });
 
-    test("findUnique -> chuyển hướng sang findFirst và tự động lọc DeletedAt: null", async () => {
-      mockBasePrisma.dangVien.findFirst.mockResolvedValueOnce({ Id: "m1", DeletedAt: null });
+    test("findUnique -> chuyển hướng sang findFirst và tự động lọc deletedAt: null", async () => {
+      mockBasePrisma.dangVien.findFirst.mockResolvedValueOnce({ id: "m1", deletedAt: null });
 
       const result = await prisma.dangVien.findUnique({
-        where: { Id: "m1" },
+        where: { id: "m1" },
       });
 
       expect(mockBasePrisma.dangVien.findFirst).toHaveBeenCalledWith({
-        where: { Id: "m1", DeletedAt: null },
+        where: { id: "m1", deletedAt: null },
       });
-      expect(result.Id).toBe("m1");
+      expect(result.id).toBe("m1");
     });
 
-    test("findFirst -> tự động lọc DeletedAt: null", async () => {
-      mockBasePrisma.dangVien.findFirst.mockResolvedValueOnce({ Id: "m2" });
+    test("findFirst -> tự động lọc deletedAt: null", async () => {
+      mockBasePrisma.dangVien.findFirst.mockResolvedValueOnce({ id: "m2" });
 
       await prisma.dangVien.findFirst({
-        where: { SoTheDangVien: "123" },
+        where: { soTheDangVien: "123" },
       });
 
       expect(mockBasePrisma.dangVien.findFirst).toHaveBeenCalledWith({
-        where: { SoTheDangVien: "123", DeletedAt: null },
+        where: { soTheDangVien: "123", deletedAt: null },
       });
     });
 
-    test("findMany -> tự động lọc DeletedAt: null", async () => {
+    test("findMany -> tự động lọc deletedAt: null", async () => {
       mockBasePrisma.dangVien.findMany.mockResolvedValueOnce([]);
 
       await prisma.dangVien.findMany({
-        where: { ToChucDangId: "org1" },
+        where: { toChucDangId: "org1" },
       });
 
       expect(mockBasePrisma.dangVien.findMany).toHaveBeenCalledWith({
-        where: { ToChucDangId: "org1", DeletedAt: null },
+        where: { toChucDangId: "org1", deletedAt: null },
       });
     });
   });
@@ -164,13 +164,13 @@ describe("Prisma Soft Delete Client Extension", () => {
       mockBasePrisma.deXuatHuyHieu.findMany.mockResolvedValueOnce([]);
 
       await prisma.deXuatHuyHieu.findMany({
-        where: { TrangThai: "PENDING" },
+        where: { trangThai: "PENDING" },
       });
 
       expect(mockBasePrisma.deXuatHuyHieu.findMany).toHaveBeenCalledWith({
         where: {
-          TrangThai: "PENDING",
-          DangVien: { DeletedAt: null },
+          trangThai: "PENDING",
+          dangVien: { deletedAt: null },
         },
       });
     });
@@ -179,13 +179,13 @@ describe("Prisma Soft Delete Client Extension", () => {
       mockBasePrisma.deXuatHuyHieu.findFirst.mockResolvedValueOnce(null);
 
       await prisma.deXuatHuyHieu.findFirst({
-        where: { Id: "b1" },
+        where: { id: "b1" },
       });
 
       expect(mockBasePrisma.deXuatHuyHieu.findFirst).toHaveBeenCalledWith({
         where: {
-          Id: "b1",
-          DangVien: { DeletedAt: null },
+          id: "b1",
+          dangVien: { deletedAt: null },
         },
       });
     });
@@ -194,13 +194,13 @@ describe("Prisma Soft Delete Client Extension", () => {
       mockBasePrisma.deXuatHuyHieu.findUnique.mockResolvedValueOnce(null);
 
       await prisma.deXuatHuyHieu.findUnique({
-        where: { Id: "b1" },
+        where: { id: "b1" },
       });
 
       expect(mockBasePrisma.deXuatHuyHieu.findUnique).toHaveBeenCalledWith({
         where: {
-          Id: "b1",
-          DangVien: { DeletedAt: null },
+          id: "b1",
+          dangVien: { deletedAt: null },
         },
       });
     });

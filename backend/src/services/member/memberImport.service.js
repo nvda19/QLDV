@@ -30,32 +30,76 @@ const { ROLES } = require("../../domain/constants/member.constants");
 const findDuplicateMember = async (flatData) => {
   const { SoLyLich, SoTheDangVien, HoTenDangDung, HoTenKhaiSinh, NgaySinh } = flatData;
 
+  const attachAliases = (existing) => {
+    if (!existing) return null;
+    const id = existing.id || existing.Id;
+    existing.id = id;
+    existing.Id = id;
+    const toChucDangId = existing.toChucDangId || existing.ToChucDangId;
+    existing.toChucDangId = toChucDangId;
+    existing.ToChucDangId = toChucDangId;
+    const soLyLich = existing.soLyLich || existing.SoLyLich;
+    existing.soLyLich = soLyLich;
+    existing.SoLyLich = soLyLich;
+    const soTheDangVien = existing.soTheDangVien || existing.SoTheDangVien;
+    existing.soTheDangVien = soTheDangVien;
+    existing.SoTheDangVien = soTheDangVien;
+
+    const lyLich = existing.lyLichCaNhan || existing.LyLichCaNhan;
+    if (lyLich) {
+      existing.lyLichCaNhan = lyLich;
+      existing.LyLichCaNhan = lyLich;
+      const hoTenDangDung = lyLich.hoTenDangDung || lyLich.HoTenDangDung;
+      lyLich.hoTenDangDung = hoTenDangDung;
+      lyLich.HoTenDangDung = hoTenDangDung;
+      const hoTenKhaiSinh = lyLich.hoTenKhaiSinh || lyLich.HoTenKhaiSinh;
+      lyLich.hoTenKhaiSinh = hoTenKhaiSinh;
+      lyLich.HoTenKhaiSinh = hoTenKhaiSinh;
+      const ngaySinh = lyLich.ngaySinh || lyLich.NgaySinh;
+      lyLich.ngaySinh = ngaySinh;
+      lyLich.NgaySinh = ngaySinh;
+    }
+
+    const org = existing.toChucDang || existing.ToChucDang;
+    if (org) {
+      existing.toChucDang = org;
+      existing.ToChucDang = org;
+      const orgId = org.id || org.Id;
+      org.id = orgId;
+      org.Id = orgId;
+      const ten = org.ten || org.Ten;
+      org.ten = ten;
+      org.Ten = ten;
+    }
+    return existing;
+  };
+
   if (SoLyLich && SoLyLich.trim() !== "") {
     const existing = await prisma.dangVien.findFirst({
       where: {
-        SoLyLich: SoLyLich.trim(),
-        DeletedAt: null,
+        soLyLich: SoLyLich.trim(),
+        deletedAt: null,
       },
       include: {
-        LyLichCaNhan: true,
-        ToChucDang: true,
+        lyLichCaNhan: true,
+        toChucDang: true,
       },
     });
-    if (existing) return { member: existing, field: "Số lý lịch", value: SoLyLich.trim() };
+    if (existing) return { member: attachAliases(existing), field: "Số lý lịch", value: SoLyLich.trim() };
   }
 
   if (SoTheDangVien && SoTheDangVien.trim() !== "") {
     const existing = await prisma.dangVien.findFirst({
       where: {
-        SoTheDangVien: SoTheDangVien.trim(),
-        DeletedAt: null,
+        soTheDangVien: SoTheDangVien.trim(),
+        deletedAt: null,
       },
       include: {
-        LyLichCaNhan: true,
-        ToChucDang: true,
+        lyLichCaNhan: true,
+        toChucDang: true,
       },
     });
-    if (existing) return { member: existing, field: "Số thẻ Đảng viên", value: SoTheDangVien.trim() };
+    if (existing) return { member: attachAliases(existing), field: "Số thẻ Đảng viên", value: SoTheDangVien.trim() };
   }
 
   const name = HoTenDangDung || HoTenKhaiSinh;
@@ -69,26 +113,26 @@ const findDuplicateMember = async (flatData) => {
       
       const existing = await prisma.dangVien.findFirst({
         where: {
-          DeletedAt: null,
-          LyLichCaNhan: {
-            NgaySinh: {
+          deletedAt: null,
+          lyLichCaNhan: {
+            ngaySinh: {
               gte: startOfDay,
               lte: endOfDay,
             },
             OR: [
-              { HoTenDangDung: { equals: name.trim(), mode: "insensitive" } },
-              { HoTenKhaiSinh: { equals: name.trim(), mode: "insensitive" } },
+              { hoTenDangDung: { equals: name.trim(), mode: "insensitive" } },
+              { hoTenKhaiSinh: { equals: name.trim(), mode: "insensitive" } },
             ]
           }
         },
         include: {
-          LyLichCaNhan: true,
-          ToChucDang: true,
+          lyLichCaNhan: true,
+          toChucDang: true,
         }
       });
       if (existing) {
         return {
-          member: existing,
+          member: attachAliases(existing),
           field: "Họ tên và Ngày sinh",
           value: `${name.trim()} (${dob.toLocaleDateString("vi-VN")})`
         };

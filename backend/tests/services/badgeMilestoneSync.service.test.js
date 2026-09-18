@@ -34,69 +34,69 @@ describe("badgeMilestoneSync.service", () => {
     await syncBadgeMilestone("m1", 30, mockTx);
 
     expect(mockTx.dangVien.findUnique).toHaveBeenCalledWith({
-      where: { Id: "m1" },
-      include: { KhenThuongKyLuat: true },
+      where: { id: "m1" },
+      include: { khenThuongKyLuat: true },
     });
     expect(mockTx.khenThuongKyLuat.upsert).not.toHaveBeenCalled();
   });
 
   test("set HuyHieuDang trực tiếp nếu chưa có", async () => {
     mockTx.dangVien.findUnique.mockResolvedValueOnce({
-      Id: "m1",
-      KhenThuongKyLuat: null,
+      id: "m1",
+      khenThuongKyLuat: null,
     });
 
     await syncBadgeMilestone("m1", 30, mockTx);
 
     expect(mockTx.khenThuongKyLuat.upsert).toHaveBeenCalledWith({
-      where: { DangVienId: "m1" },
-      create: { DangVienId: "m1", HuyHieuDang: "30 năm tuổi Đảng" },
-      update: { HuyHieuDang: "30 năm tuổi Đảng" },
+      where: { dangVienId: "m1" },
+      create: { dangVienId: "m1", huyHieuDang: "30 năm tuổi Đảng" },
+      update: { huyHieuDang: "30 năm tuổi Đảng" },
     });
   });
 
   test("set HuyHieuDang trực tiếp nếu HuyHieuDang hiện tại là 'Chưa'", async () => {
     mockTx.dangVien.findUnique.mockResolvedValueOnce({
-      Id: "m1",
-      KhenThuongKyLuat: { HuyHieuDang: "Chưa" },
+      id: "m1",
+      khenThuongKyLuat: { huyHieuDang: "Chưa" },
     });
 
     await syncBadgeMilestone("m1", 40, mockTx);
 
     expect(mockTx.khenThuongKyLuat.upsert).toHaveBeenCalledWith({
-      where: { DangVienId: "m1" },
-      create: { DangVienId: "m1", HuyHieuDang: "40 năm tuổi Đảng" },
-      update: { HuyHieuDang: "40 năm tuổi Đảng" },
+      where: { dangVienId: "m1" },
+      create: { dangVienId: "m1", huyHieuDang: "40 năm tuổi Đảng" },
+      update: { huyHieuDang: "40 năm tuổi Đảng" },
     });
   });
 
   test("nối tiếp mốc mới bằng dấu phẩy nếu chưa có mốc này", async () => {
     mockTx.dangVien.findUnique.mockResolvedValueOnce({
-      Id: "m1",
-      KhenThuongKyLuat: { HuyHieuDang: "30 năm tuổi Đảng" },
+      id: "m1",
+      khenThuongKyLuat: { huyHieuDang: "30 năm tuổi Đảng" },
     });
 
     await syncBadgeMilestone("m1", 40, mockTx);
 
     expect(mockTx.khenThuongKyLuat.upsert).toHaveBeenCalledWith({
-      where: { DangVienId: "m1" },
-      create: { DangVienId: "m1", HuyHieuDang: "30 năm tuổi Đảng, 40 năm tuổi Đảng" },
-      update: { HuyHieuDang: "30 năm tuổi Đảng, 40 năm tuổi Đảng" },
+      where: { dangVienId: "m1" },
+      create: { dangVienId: "m1", huyHieuDang: "30 năm tuổi Đảng, 40 năm tuổi Đảng" },
+      update: { huyHieuDang: "30 năm tuổi Đảng, 40 năm tuổi Đảng" },
     });
   });
 
   test("giữ nguyên nếu mốc này đã tồn tại trong chuỗi", async () => {
     mockTx.dangVien.findUnique.mockResolvedValueOnce({
-      Id: "m1",
-      KhenThuongKyLuat: { HuyHieuDang: "30 năm tuổi Đảng, 40 năm tuổi Đảng" },
+      id: "m1",
+      khenThuongKyLuat: { huyHieuDang: "30 năm tuổi Đảng, 40 năm tuổi Đảng" },
     });
 
     await syncBadgeMilestone("m1", 30, mockTx);
 
     expect(mockTx.khenThuongKyLuat.upsert).toHaveBeenCalledWith({
-      where: { DangVienId: "m1" },
-      create: { DangVienId: "m1", HuyHieuDang: "30 năm tuổi Đảng, 40 năm tuổi Đảng" },
-      update: { HuyHieuDang: "30 năm tuổi Đảng, 40 năm tuổi Đảng" },
+      where: { dangVienId: "m1" },
+      create: { dangVienId: "m1", huyHieuDang: "30 năm tuổi Đảng, 40 năm tuổi Đảng" },
+      update: { huyHieuDang: "30 năm tuổi Đảng, 40 năm tuổi Đảng" },
     });
   });
 
@@ -105,6 +105,9 @@ describe("badgeMilestoneSync.service", () => {
 
     await syncBadgeMilestone("m1", 30);
 
-    expect(prisma.dangVien.findUnique).toHaveBeenCalled();
+    expect(prisma.dangVien.findUnique).toHaveBeenCalledWith({
+      where: { id: "m1" },
+      include: { khenThuongKyLuat: true },
+    });
   });
 });

@@ -6,10 +6,9 @@
  * @returns {*} Điều kiện truy vấn đã thêm lọc soft delete
  */
 function addSoftDeleteFilter(where) {
-  if (!where) return { DeletedAt: null };
-  // Nếu query truyền DeletedAt cụ thể thì tôn trọng tham số đó
-  if (where.DeletedAt !== undefined) return where;
-  return { ...where, DeletedAt: null };
+  if (!where) return { deletedAt: null };
+  if (where.deletedAt !== undefined || where.DeletedAt !== undefined) return where;
+  return { ...where, deletedAt: null };
 }
 
 const MODELS_WITH_DANGVIEN_RELATION = new Set([
@@ -39,13 +38,18 @@ const MODELS_WITH_DANGVIEN_RELATION = new Set([
  */
 function addSoftDeleteRelationFilter(model, where) {
   if (!MODELS_WITH_DANGVIEN_RELATION.has(model)) return where;
-  if (!where) return { DangVien: { DeletedAt: null } };
-  if (where.DangVien && where.DangVien.DeletedAt !== undefined) return where;
+  if (!where) return { dangVien: { deletedAt: null } };
+  if (
+    (where.dangVien && where.dangVien.deletedAt !== undefined) ||
+    (where.DangVien && where.DangVien.DeletedAt !== undefined)
+  ) {
+    return where;
+  }
   return {
     ...where,
-    DangVien: where.DangVien
-      ? { ...where.DangVien, DeletedAt: null }
-      : { DeletedAt: null },
+    dangVien: where.dangVien
+      ? { ...where.dangVien, deletedAt: null }
+      : { deletedAt: null },
   };
 }
 

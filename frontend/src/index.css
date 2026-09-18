@@ -964,9 +964,9 @@ h4 {
   position: relative;
 }
 
-/* ---- Sidebar: Dãy icon nhỏ tinh gọn, rê chuột vào mở rộng giây lát ---- */
+/* ---- Sidebar: Dãy icon nhỏ tinh gọn, có nhãn vắn tắt bên dưới & tooltip khi lia chuột ---- */
 .sidebar {
-  width: 60px;
+  width: 64px;
   background: var(--color-bg-card);
   backdrop-filter: var(--backdrop-blur);
   -webkit-backdrop-filter: var(--backdrop-blur);
@@ -977,82 +977,51 @@ h4 {
   position: fixed;
   top: calc(50% + (var(--header-height) / 2));
   transform: translateY(-50%);
-  left: 18px;
+  left: 14px;
   height: fit-content;
-  max-height: calc(100vh - var(--header-height) - 36px);
+  max-height: calc(100vh - var(--header-height) - 20px);
   z-index: 150;
   box-shadow: var(--shadow-md);
   transition:
-    width var(--transition-base),
     box-shadow var(--transition-base),
     border-color var(--transition-base);
-  overflow: hidden;
+  overflow: visible;
   user-select: none;
-}
-
-/* Rê chuột vào dãy icon: tự động bung ra đầy đủ chữ */
-.sidebar:hover {
-  width: 260px;
-  box-shadow: var(--shadow-lg), 0 16px 40px rgba(0, 0, 0, 0.18);
-  border-color: var(--color-accent-light);
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 8px 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  padding: 6px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  overflow: visible;
 }
 
 .sidebar-section {
-  padding: 8px 16px 4px;
-  margin-top: 4px;
-  transition: all var(--transition-fast);
-  white-space: nowrap;
+  display: none !important;
 }
 
 .sidebar-section-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity var(--transition-fast);
-  white-space: nowrap;
-}
-
-.sidebar:hover .sidebar-section-title {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Khi không rê chuột: biến tiêu đề thành đường kẻ chia nhóm nhỏ */
-.sidebar:not(:hover) .sidebar-section {
-  padding: 4px 10px;
-  margin: 4px 0;
-  height: 1px;
-  background: var(--color-border-light);
-}
-
-.sidebar:not(:hover) .sidebar-section-title {
   display: none !important;
 }
 
 .sidebar-link {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  height: 42px;
-  font-size: var(--font-size-sm);
-  font-weight: 500;
+  justify-content: center;
+  width: calc(100% - 8px);
+  margin: 0 4px;
+  height: 45px;
+  border-radius: 8px;
+  padding: 3px 2px;
   color: var(--color-text-secondary);
   transition: all var(--transition-fast);
-  border-left: 3px solid transparent;
   text-decoration: none;
-  width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 .sidebar-link:hover {
@@ -1062,16 +1031,35 @@ h4 {
 
 .sidebar-link.active {
   color: var(--color-accent);
-  background: rgba(30, 64, 175, 0.08);
-  border-left-color: var(--color-accent);
+  background: rgba(30, 64, 175, 0.1);
   font-weight: 600;
 }
 
-/* Hộp chứa Icon cố định chiều rộng 57px căn chính giữa thanh 60px */
+.sidebar-link.active::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  background: var(--color-accent);
+  border-radius: 0 2px 2px 0;
+}
+
+[data-theme="dark"] .sidebar-link.active {
+  color: var(--color-accent-light);
+  background: rgba(59, 130, 246, 0.16);
+}
+
+[data-theme="dark"] .sidebar-link.active::before {
+  background: var(--color-accent-light);
+}
+
+/* Hộp chứa Icon */
 .sidebar-icon-box {
-  width: 57px;
-  min-width: 57px;
-  height: 100%;
+  width: 100%;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1081,92 +1069,149 @@ h4 {
 }
 
 .sidebar-icon-box .icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
   display: block;
   color: inherit;
 }
 
-/* Huy hiệu số thông báo trên icon khi ở chế độ thu nhỏ */
+/* Nhãn chữ nhỏ bên dưới mỗi icon */
+.sidebar-sublabel {
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: center;
+  max-width: 58px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  padding: 0 1px;
+  letter-spacing: -0.2px;
+  transition: color var(--transition-fast);
+}
+
+.sidebar-link:hover .sidebar-sublabel {
+  color: var(--color-text-primary);
+}
+
+.sidebar-link.active .sidebar-sublabel {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+[data-theme="dark"] .sidebar-sublabel {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .sidebar-link:hover .sidebar-sublabel {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .sidebar-link.active .sidebar-sublabel {
+  color: var(--color-accent-light);
+}
+
+/* Huy hiệu số thông báo trên icon */
 .sidebar-icon-badge {
   position: absolute;
-  top: 6px;
-  right: 10px;
+  top: -3px;
+  right: 15px;
   background: #dc2626;
   color: #ffffff;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
-  min-width: 14px;
-  height: 14px;
-  border-radius: 7px;
+  min-width: 13px;
+  height: 13px;
+  border-radius: 6.5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 3px;
+  padding: 0 2.5px;
   line-height: 1;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
-.sidebar:hover .sidebar-icon-badge {
-  display: none !important;
-}
-
-/* Phần chữ mô tả danh mục: ẩn khi thu nhỏ, mở ra khi hover */
-.sidebar-link-text {
-  font-size: var(--font-size-sm);
+/* Tooltip hiển thị tên mục khi lia chuột vào */
+.sidebar-tooltip {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  background: #1e293b;
+  color: #ffffff;
+  font-size: 13px;
   font-weight: 500;
-  color: inherit;
+  line-height: 1.2;
   white-space: nowrap;
+  padding: 6px 12px;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
   opacity: 0;
-  max-width: 0;
-  overflow: hidden;
-  display: flex;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
+  z-index: 9999;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding-right: 12px;
-  transition:
-    opacity var(--transition-fast),
-    max-width var(--transition-base);
 }
 
-.sidebar:hover .sidebar-link-text {
+/* Mũi tên trỏ về phía icon */
+.sidebar-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  background: #1e293b;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+[data-theme="dark"] .sidebar-tooltip {
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .sidebar-tooltip::before {
+  background: #0f172a;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Rê chuột hoặc focus bàn phím vào link thì hiện tooltip của mục đó */
+.sidebar-link:hover .sidebar-tooltip,
+.sidebar-link:focus-visible .sidebar-tooltip {
   opacity: 1;
-  max-width: 190px;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
 }
 
-/* Huy hiệu số thông báo khi mở rộng */
-.sidebar-text-badge {
+/* Huy hiệu số thông báo trong tooltip */
+.sidebar-tooltip-badge {
   background: #dc2626;
   color: #ffffff;
   font-size: 10px;
   font-weight: 700;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 9px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 5px;
+  padding: 0 4px;
   line-height: 1;
 }
 
 .sidebar-footer {
-  padding: 10px 16px;
-  border-top: 1px solid var(--color-border);
-  flex-shrink: 0;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity var(--transition-fast);
-}
-
-.sidebar:hover .sidebar-footer {
-  opacity: 1;
-  visibility: visible;
-}
-
-.sidebar:not(:hover) .sidebar-footer {
   display: none !important;
 }
 
@@ -2099,12 +2144,21 @@ h4 {
 
 @media (max-width: 768px) {
   .sidebar {
-    left: 8px;
-    width: 50px;
+    left: 6px;
+    width: 54px;
   }
 
-  .sidebar:hover {
-    width: 240px;
+  .sidebar-icon-box {
+    width: 100%;
+  }
+
+  .sidebar-sublabel {
+    max-width: 50px;
+    font-size: 8.5px;
+  }
+
+  .sidebar-icon-badge {
+    right: 12px;
   }
 
   .main-content {

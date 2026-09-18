@@ -10,55 +10,55 @@ async function createFullDangVien(data, orgMap) {
 
   const dv = await prisma.dangVien.create({
     data: {
-      ToChucDangId: orgId,
-      SoLyLich: data.SoLyLich,
-      SoTheDangVien: data.SoTheDangVien,
-      TrangThai: data.TrangThai || "HOAT_DONG",
+      toChucDangId: orgId,
+      soLyLich: data.SoLyLich,
+      soTheDangVien: data.SoTheDangVien,
+      trangThai: data.TrangThai || "HOAT_DONG",
     },
   });
 
-  const dvId = dv.Id;
+  const dvId = dv.id || dv.Id;
 
   await prisma.lyLichCaNhan.create({
     data: {
-      DangVienId: dvId,
-      HoTenDangDung: data.HoTenDangDung,
-      HoTenKhaiSinh: data.HoTenKhaiSinh,
-      GioiTinh: data.GioiTinh,
-      NgaySinh: new Date(data.NgaySinh),
-      NoiSinh: data.NoiSinh,
-      QueQuan: data.QueQuan,
-      NoiThuongTru: data.NoiThuongTru || null,
-      NoiTamTru: data.NoiTamTru || null,
-      DanToc: data.DanToc || "Kinh",
-      TonGiao: data.TonGiao || "Không",
-      ThanhPhanGiaDinh: data.ThanhPhanGiaDinh,
-      NgheNghiepHienNay: data.NgheNghiepHienNay || null,
-      NgheNghiepKhiVaoDang: data.NgheNghiepKhiVaoDang || null,
-      SoCMND: data.SoCMND || null,
-      SoCMTQD: data.SoCMTQD || null,
+      dangVienId: dvId,
+      hoTenDangDung: data.HoTenDangDung,
+      hoTenKhaiSinh: data.HoTenKhaiSinh,
+      gioiTinh: data.GioiTinh,
+      ngaySinh: new Date(data.NgaySinh),
+      noiSinh: data.NoiSinh,
+      queQuan: data.QueQuan,
+      noiThuongTru: data.NoiThuongTru || null,
+      noiTamTru: data.NoiTamTru || null,
+      danToc: data.DanToc || "Kinh",
+      tonGiao: data.TonGiao || "Không",
+      thanhPhanGiaDinh: data.ThanhPhanGiaDinh,
+      ngheNghiepHienNay: data.NgheNghiepHienNay || null,
+      ngheNghiepKhiVaoDang: data.NgheNghiepKhiVaoDang || null,
+      soCMND: data.SoCMND || null,
+      soCMTQD: data.SoCMTQD || null,
     },
   });
 
   await prisma.thongTinVaoDang.create({
     data: {
-      DangVienId: dvId,
-      NgayVaoDang: data.NgayVaoDang ? new Date(data.NgayVaoDang) : null,
-      ChiBoVaoDang: data.ChiBoVaoDang || null,
-      NguoiGioiThieu1: data.NguoiGioiThieu1 || null,
-      ChucVuNGT1: data.ChucVuNGT1 || null,
-      NguoiGioiThieu2: data.NguoiGioiThieu2 || null,
-      ChucVuNGT2: data.ChucVuNGT2 || null,
-      NgayQuyetDinhKetNap: data.NgayQuyetDinhKetNap
+      dangVienId: dvId,
+      ngayVaoDang: data.NgayVaoDang ? new Date(data.NgayVaoDang) : null,
+      chiBoVaoDang: data.ChiBoVaoDang || null,
+      nguoiGioiThieu1: data.NguoiGioiThieu1 || null,
+      chucVuNGT1: data.ChucVuNGT1 || null,
+      nguoiGioiThieu2: data.NguoiGioiThieu2 || null,
+      chucVuNGT2: data.ChucVuNGT2 || null,
+      ngayQuyetDinhKetNap: data.NgayQuyetDinhKetNap
         ? new Date(data.NgayQuyetDinhKetNap)
         : null,
-      NgayChinhThuc: data.NgayChinhThuc ? new Date(data.NgayChinhThuc) : null,
-      ChiBoChinhThuc: data.ChiBoChinhThuc || null,
-      NoiSinhHoatDang: data.NoiSinhHoatDang || null,
-      ChucVuDang: data.ChucVuDang || null,
-      NgayVaoDoan: data.NgayVaoDoan ? new Date(data.NgayVaoDoan) : null,
-      ToChucXaHoi: data.ToChucXaHoi || null,
-      NgayMienCongTac: data.NgayMienCongTac
+      ngayChinhThuc: data.NgayChinhThuc ? new Date(data.NgayChinhThuc) : null,
+      chiBoChinhThuc: data.ChiBoChinhThuc || null,
+      noiSinhHoatDang: data.NoiSinhHoatDang || null,
+      chucVuDang: data.ChucVuDang || null,
+      ngayVaoDoan: data.NgayVaoDoan ? new Date(data.NgayVaoDoan) : null,
+      toChucXaHoi: data.ToChucXaHoi || null,
+      ngayMienCongTac: data.NgayMienCongTac
         ? new Date(data.NgayMienCongTac)
         : null,
     },
@@ -66,67 +66,67 @@ async function createFullDangVien(data, orgMap) {
 
   await prisma.trinhDoHocVan.create({
     data: {
-      DangVienId: dvId,
-      GiaoDucPhoThong: data.GiaoDucPhoThong || "12/12",
-      GiaoDucNgheNghiep: data.GiaoDucNgheNghiep || null,
-      GiaoDucDaiHoc: data.GiaoDucDaiHoc || null,
-      HocVi: data.HocVi || null,
-      HocHam: data.HocHam || null,
-      LyLuanChinhTri: data.LyLuanChinhTri || "Sơ cấp",
-      NgoaiNgu: data.NgoaiNgu || null,
-      TinHoc: data.TinHoc || null,
+      dangVienId: dvId,
+      giaoDucPhoThong: data.GiaoDucPhoThong || "12/12",
+      giaoDucNgheNghiep: data.GiaoDucNgheNghiep || null,
+      giaoDucDaiHoc: data.GiaoDucDaiHoc || null,
+      hocVi: data.HocVi || null,
+      hocHam: data.HocHam || null,
+      lyLuanChinhTri: data.LyLuanChinhTri || "Sơ cấp",
+      ngoaiNgu: data.NgoaiNgu || null,
+      tinHoc: data.TinHoc || null,
     },
   });
 
   await prisma.tuyenDungQuanNgu.create({
     data: {
-      DangVienId: dvId,
-      NgayTuyenDung: data.NgayTuyenDung ? new Date(data.NgayTuyenDung) : null,
-      CoQuanTuyenDung: data.CoQuanTuyenDung || null,
-      NgayNhapNgu: data.NgayNhapNgu ? new Date(data.NgayNhapNgu) : null,
-      NgayXuatNgu: data.NgayXuatNgu ? new Date(data.NgayXuatNgu) : null,
-      NgayTaiNgu: data.NgayTaiNgu ? new Date(data.NgayTaiNgu) : null,
-      CapBac: data.CapBac || null,
-      CongViecChinh: data.CongViecChinh || null,
+      dangVienId: dvId,
+      ngayTuyenDung: data.NgayTuyenDung ? new Date(data.NgayTuyenDung) : null,
+      coQuanTuyenDung: data.CoQuanTuyenDung || null,
+      ngayNhapNgu: data.NgayNhapNgu ? new Date(data.NgayNhapNgu) : null,
+      ngayXuatNgu: data.NgayXuatNgu ? new Date(data.NgayXuatNgu) : null,
+      ngayTaiNgu: data.NgayTaiNgu ? new Date(data.NgayTaiNgu) : null,
+      capBac: data.CapBac || null,
+      congViecChinh: data.CongViecChinh || null,
     },
   });
 
   await prisma.sucKhoeChinhSach.create({
     data: {
-      DangVienId: dvId,
-      TinhTrangSucKhoe: data.TinhTrangSucKhoe || "Tốt (Loại 1)",
-      ThuongBinhLoai: data.ThuongBinhLoai || null,
-      GiaDinhLietSy: data.GiaDinhLietSy || false,
-      GiaDinhCoCong: data.GiaDinhCoCong || false,
+      dangVienId: dvId,
+      tinhTrangSucKhoe: data.TinhTrangSucKhoe || "Tốt (Loại 1)",
+      thuongBinhLoai: data.ThuongBinhLoai || null,
+      giaDinhLietSy: data.GiaDinhLietSy || false,
+      giaDinhCoCong: data.GiaDinhCoCong || false,
     },
   });
 
   await prisma.khenThuongKyLuat.create({
     data: {
-      DangVienId: dvId,
-      KhenThuong: data.KhenThuong || "Chưa",
-      HuyHieuDang: data.HuyHieuDang || "Chưa",
-      DanhHieuPhongTang: data.DanhHieuPhongTang || "Chưa",
-      KyLuat: data.KyLuat || "Không",
+      dangVienId: dvId,
+      khenThuong: data.KhenThuong || "Chưa",
+      huyHieuDang: data.HuyHieuDang || "Chưa",
+      danhHieuPhongTang: data.DanhHieuPhongTang || "Chưa",
+      kyLuat: data.KyLuat || "Không",
     },
   });
 
   await prisma.dacDiemLyLich.create({
     data: {
-      DangVienId: dvId,
-      LichSuBanThan: data.LichSuBanThan || {
+      dangVienId: dvId,
+      lichSuBanThan: data.LichSuBanThan || {
         bixoaten: "Không",
         ketNapLai: "Không",
         khoiPhucDangTich: "Không",
         xuLyPhapLuat: "Không",
         cheDocU: "Không",
       },
-      QuanHeNuocNgoai: data.QuanHeNuocNgoai || {
+      quanHeNuocNgoai: data.QuanHeNuocNgoai || {
         foreignTravel: "Không",
         foreignOrgs: "Không",
         foreignRelatives: "Không",
       },
-      HoanCanhKinhTe: data.HoanCanhKinhTe || {
+      hoanCanhKinhTe: data.HoanCanhKinhTe || {
         totalIncome: "120.000.000đ/năm",
         perCapitaIncome: "40.000.000đ/năm",
         houseOwned: "Không",
@@ -139,17 +139,26 @@ async function createFullDangVien(data, orgMap) {
 
   if (data.QuanHeGiaDinh && data.QuanHeGiaDinh.length > 0) {
     await prisma.quanHeGiaDinh.createMany({
-      data: data.QuanHeGiaDinh.map((item) => ({ DangVienId: dvId, ...item })),
+      data: data.QuanHeGiaDinh.map((item) => ({
+        dangVienId: dvId,
+        quanHe: item.QuanHe,
+        hoTen: item.HoTen,
+        namSinh: item.NamSinh,
+        ngheNghiep: item.NgheNghiep,
+        noiOHienNay: item.NoiOHienNay,
+        hoanCanhKinhTe: item.HoanCanhKinhTe,
+        lichSuChinhTri: item.LichSuChinhTri,
+      })),
     });
   }
 
   if (data.QuaTrinhCongTac && data.QuaTrinhCongTac.length > 0) {
     await prisma.quaTrinhCongTac.createMany({
       data: data.QuaTrinhCongTac.map((item) => ({
-        DangVienId: dvId,
-        TuThangNam: new Date(item.TuThangNam),
-        DenThangNam: item.DenThangNam ? new Date(item.DenThangNam) : null,
-        LamGiChucVuDonVi: item.LamGiChucVuDonVi,
+        dangVienId: dvId,
+        tuThangNam: new Date(item.TuThangNam),
+        denThangNam: item.DenThangNam ? new Date(item.DenThangNam) : null,
+        lamGiChucVuDonVi: item.LamGiChucVuDonVi,
       })),
     });
   }
@@ -157,13 +166,13 @@ async function createFullDangVien(data, orgMap) {
   if (data.QuaTrinhDaoTao && data.QuaTrinhDaoTao.length > 0) {
     await prisma.quaTrinhDaoTao.createMany({
       data: data.QuaTrinhDaoTao.map((item) => ({
-        DangVienId: dvId,
-        TenTruong: item.TenTruong,
-        NganhHoc: item.NganhHoc,
-        TuNgay: new Date(item.TuNgay),
-        DenNgay: new Date(item.DenNgay),
-        HinhThuc: item.HinhThuc,
-        VanBangChungChi: item.VanBangCert || null,
+        dangVienId: dvId,
+        tenTruong: item.TenTruong,
+        nganhHoc: item.NganhHoc,
+        tuNgay: new Date(item.TuNgay),
+        denNgay: new Date(item.DenNgay),
+        hinhThuc: item.HinhThuc,
+        vanBangChungChi: item.VanBangCert || null,
       })),
     });
   }
@@ -171,12 +180,12 @@ async function createFullDangVien(data, orgMap) {
   if (data.LichSuQuanHam && data.LichSuQuanHam.length > 0) {
     await prisma.lichSuQuanHam.createMany({
       data: data.LichSuQuanHam.map((item) => ({
-        DangVienId: dvId,
-        CapBac: item.CapBac,
-        ChucVu: item.ChucVu || null,
-        DonVi: item.DonVi,
-        NgayHieuLuc: new Date(item.NgayHieuLuc),
-        SoQuyetDinh: item.SoQuyetDinh,
+        dangVienId: dvId,
+        capBac: item.CapBac,
+        chucVu: item.ChucVu || null,
+        donVi: item.DonVi,
+        ngayHieuLuc: new Date(item.NgayHieuLuc),
+        soQuyetDinh: item.SoQuyetDinh,
       })),
     });
   }
@@ -184,12 +193,12 @@ async function createFullDangVien(data, orgMap) {
   if (data.DanhGiaDangVien && data.DanhGiaDangVien.length > 0) {
     await prisma.danhGiaDangVien.createMany({
       data: data.DanhGiaDangVien.map((item) => ({
-        DangVienId: dvId,
-        Nam: item.Nam,
-        XepLoai: item.XepLoai,
-        NhanXet: item.NhanXet || null,
-        TrangThai: item.TrangThai || "APPROVED",
-        SoQuyetDinh: item.SoQuyetDinh || null,
+        dangVienId: dvId,
+        nam: item.Nam,
+        xepLoai: item.XepLoai,
+        nhanXet: item.NhanXet || null,
+        trangThai: item.TrangThai || "APPROVED",
+        soQuyetDinh: item.SoQuyetDinh || null,
       })),
     });
   }
@@ -233,47 +242,47 @@ async function main() {
     // 2. Tạo Tổ chức Đảng (Cơ cấu Học viện Khoa học Quân sự)
     console.log("\n📍 Đang tạo danh sách Tổ chức Đảng...");
     const dangUyHocVien = await prisma.toChucDang.create({
-      data: { Ten: "Đảng bộ Học viện Khoa học Quân sự" },
+      data: { ten: "Đảng bộ Học viện Khoa học Quân sự" },
     });
 
     const dangBoNgoaiNgu = await prisma.toChucDang.create({
-      data: { Ten: "Đảng bộ Khoa Ngoại ngữ", ToChucChaId: dangUyHocVien.Id },
+      data: { ten: "Đảng bộ Khoa Ngoại ngữ", toChucChaId: dangUyHocVien.id },
     });
 
     const dangBoTrinhSat = await prisma.toChucDang.create({
       data: {
-        Ten: "Đảng bộ Khoa Trinh sát - Quân báo",
-        ToChucChaId: dangUyHocVien.Id,
+        ten: "Đảng bộ Khoa Trinh sát - Quân báo",
+        toChucChaId: dangUyHocVien.id,
       },
     });
 
     const chiBoTiengAnh = await prisma.toChucDang.create({
-      data: { Ten: "Chi bộ Tiếng Anh", ToChucChaId: dangBoNgoaiNgu.Id },
+      data: { ten: "Chi bộ Tiếng Anh", toChucChaId: dangBoNgoaiNgu.id },
     });
 
     const chiBoTiengTrung = await prisma.toChucDang.create({
-      data: { Ten: "Chi bộ Tiếng Trung", ToChucChaId: dangBoNgoaiNgu.Id },
+      data: { ten: "Chi bộ Tiếng Trung", toChucChaId: dangBoNgoaiNgu.id },
     });
 
     const chiBoTrinhSatKyThuat = await prisma.toChucDang.create({
       data: {
-        Ten: "Chi bộ Trinh sát Kỹ thuật",
-        ToChucChaId: dangBoTrinhSat.Id,
+        ten: "Chi bộ Trinh sát Kỹ thuật",
+        toChucChaId: dangBoTrinhSat.id,
       },
     });
 
     const chiBoQuanBao = await prisma.toChucDang.create({
-      data: { Ten: "Chi bộ Quân báo", ToChucChaId: dangBoTrinhSat.Id },
+      data: { ten: "Chi bộ Quân báo", toChucChaId: dangBoTrinhSat.id },
     });
 
     const orgMap = {
-      "Đảng bộ Học viện Khoa học Quân sự": dangUyHocVien.Id,
-      "Đảng bộ Khoa Ngoại ngữ": dangBoNgoaiNgu.Id,
-      "Đảng bộ Khoa Trinh sát - Quân báo": dangBoTrinhSat.Id,
-      "Chi bộ Tiếng Anh": chiBoTiengAnh.Id,
-      "Chi bộ Tiếng Trung": chiBoTiengTrung.Id,
-      "Chi bộ Trinh sát Kỹ thuật": chiBoTrinhSatKyThuat.Id,
-      "Chi bộ Quân báo": chiBoQuanBao.Id,
+      "Đảng bộ Học viện Khoa học Quân sự": dangUyHocVien.id,
+      "Đảng bộ Khoa Ngoại ngữ": dangBoNgoaiNgu.id,
+      "Đảng bộ Khoa Trinh sát - Quân báo": dangBoTrinhSat.id,
+      "Chi bộ Tiếng Anh": chiBoTiengAnh.id,
+      "Chi bộ Tiếng Trung": chiBoTiengTrung.id,
+      "Chi bộ Trinh sát Kỹ thuật": chiBoTrinhSatKyThuat.id,
+      "Chi bộ Quân báo": chiBoQuanBao.id,
     };
 
     console.log(`  ✅ Đã tạo các tổ chức Đảng`);
@@ -284,84 +293,84 @@ async function main() {
     console.log("\n👤 Đang tạo tài khoản người dùng...");
     await prisma.nguoiDung.create({
       data: {
-        TenDangNhap: "canbo_hv",
-        MatKhauHash: hashedPassword,
-        VaiTro: "CAN_BO_CHINH_TRI",
-        ToChucDangId: dangUyHocVien.Id,
-        HoTen: "Cán bộ Chính trị Học viện",
-        TrangThai: "ACTIVE",
+        tenDangNhap: "canbo_hv",
+        matKhauHash: hashedPassword,
+        vaiTro: "CAN_BO_CHINH_TRI",
+        toChucDangId: dangUyHocVien.id,
+        hoTen: "Cán bộ Chính trị Học viện",
+        trangThai: "ACTIVE",
       },
     });
 
     // Bí thư Đảng bộ Khoa Ngoại ngữ
     await prisma.nguoiDung.create({
       data: {
-        TenDangNhap: "bithu_ngoaingu",
-        MatKhauHash: hashedPassword,
-        VaiTro: "BI_THU",
-        ToChucDangId: dangBoNgoaiNgu.Id,
-        HoTen: "Bí thư Đảng bộ Khoa Ngoại ngữ",
-        TrangThai: "ACTIVE",
+        tenDangNhap: "bithu_ngoaingu",
+        matKhauHash: hashedPassword,
+        vaiTro: "BI_THU",
+        toChucDangId: dangBoNgoaiNgu.id,
+        hoTen: "Bí thư Đảng bộ Khoa Ngoại ngữ",
+        trangThai: "ACTIVE",
       },
     });
 
     // Bí thư Chi bộ Tiếng Anh
     await prisma.nguoiDung.create({
       data: {
-        TenDangNhap: "bithu_tienganh",
-        MatKhauHash: hashedPassword,
-        VaiTro: "BI_THU",
-        ToChucDangId: chiBoTiengAnh.Id,
-        HoTen: "Bí thư Chi bộ Tiếng Anh",
-        TrangThai: "ACTIVE",
+        tenDangNhap: "bithu_tienganh",
+        matKhauHash: hashedPassword,
+        vaiTro: "BI_THU",
+        toChucDangId: chiBoTiengAnh.id,
+        hoTen: "Bí thư Chi bộ Tiếng Anh",
+        trangThai: "ACTIVE",
       },
     });
 
     // Bí thư Chi bộ Tiếng Trung
     await prisma.nguoiDung.create({
       data: {
-        TenDangNhap: "bithu_tiengtrung",
-        MatKhauHash: hashedPassword,
-        VaiTro: "BI_THU",
-        ToChucDangId: chiBoTiengTrung.Id,
-        HoTen: "Bí thư Chi bộ Tiếng Trung",
-        TrangThai: "ACTIVE",
+        tenDangNhap: "bithu_tiengtrung",
+        matKhauHash: hashedPassword,
+        vaiTro: "BI_THU",
+        toChucDangId: chiBoTiengTrung.id,
+        hoTen: "Bí thư Chi bộ Tiếng Trung",
+        trangThai: "ACTIVE",
       },
     });
 
     // Bí thư Đảng bộ Khoa Trinh sát - Quân báo
     await prisma.nguoiDung.create({
       data: {
-        TenDangNhap: "bithu_trinhsat",
-        MatKhauHash: hashedPassword,
-        VaiTro: "BI_THU",
-        ToChucDangId: dangBoTrinhSat.Id,
-        HoTen: "Bí thư Đảng bộ Khoa Trinh sát - Quân báo",
-        TrangThai: "ACTIVE",
+        tenDangNhap: "bithu_trinhsat",
+        matKhauHash: hashedPassword,
+        vaiTro: "BI_THU",
+        toChucDangId: dangBoTrinhSat.id,
+        hoTen: "Bí thư Đảng bộ Khoa Trinh sát - Quân báo",
+        trangThai: "ACTIVE",
       },
     });
 
     // Bí thư Chi bộ Trinh sát Kỹ thuật
     await prisma.nguoiDung.create({
       data: {
-        TenDangNhap: "bithu_tskt",
-        MatKhauHash: hashedPassword,
-        VaiTro: "BI_THU",
-        ToChucDangId: chiBoTrinhSatKyThuat.Id,
-        HoTen: "Bí thư Chi bộ Trinh sát Kỹ thuật",
-        TrangThai: "ACTIVE",
+        tenDangNhap: "bithu_tskt",
+        matKhauHash: hashedPassword,
+        vaiTro: "BI_THU",
+        toChucDangId: chiBoTrinhSatKyThuat.id,
+        hoTen: "Bí thư Chi bộ Trinh sát Kỹ thuật",
+        trangThai: "ACTIVE",
       },
     });
 
     // Bí thư Chi bộ Quân báo
     await prisma.nguoiDung.create({
       data: {
-        TenDangNhap: "bithu_quanbao",
-        MatKhauHash: hashedPassword,
-        VaiTro: "BI_THU",
-        ToChucDangId: chiBoQuanBao.Id,
-        HoTen: "Bí thư Chi bộ Quân báo",
-        TrangThai: "ACTIVE",
+        tenDangNhap: "bithu_quanbao",
+        matKhauHash: hashedPassword,
+        vaiTro: "BI_THU",
+        toChucDangId: chiBoQuanBao.id,
+        hoTen: "Bí thư Chi bộ Quân báo",
+        trangThai: "ACTIVE",
       },
     });
 

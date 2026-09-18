@@ -67,7 +67,7 @@ function sanitizeData(data) {
       // Object không có Id (không phải quan hệ Prisma) hoặc là mấy trường JSON đặc thù
       // (lịch sử bản thân, quan hệ nước ngoài, hoàn cảnh kinh tế) thì vẫn giữ lại nguyên vẹn
       if (
-        !value.Id ||
+        (!value.id && !value.Id) ||
         key === "lichSuBanThan" ||
         key === "quanHeNuocNgoai" ||
         key === "hoanCanhKinhTe"
@@ -136,9 +136,13 @@ async function writeAuditLog(
  */
 function extractIdFromWhere(where) {
   if (!where) return "unknown";
+  if (where.id) return where.id;
   if (where.Id) return where.Id;
+  if (where.dangVienId) return where.dangVienId;
   if (where.DangVienId) return where.DangVienId;
+  if (where.ten) return where.ten;
   if (where.Ten) return where.Ten;
+  if (where.tenDangNhap) return where.tenDangNhap;
   if (where.TenDangNhap) return where.TenDangNhap;
   return JSON.stringify(where);
 }

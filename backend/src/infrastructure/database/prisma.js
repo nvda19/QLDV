@@ -81,7 +81,7 @@ const prisma = basePrisma.$extends({
             actorId,
             "CREATE",
             model,
-            result.Id || "unknown",
+            result.id || result.Id || "unknown",
             null,
             sanitized,
             ipAddress,
@@ -124,7 +124,7 @@ const prisma = basePrisma.$extends({
               actorId,
               "UPDATE",
               model,
-              result.Id || extractIdFromWhere(args.where),
+              result.id || result.Id || extractIdFromWhere(args.where),
               diff.oldDiff,
               diff.newDiff,
               ipAddress,
@@ -168,7 +168,7 @@ const prisma = basePrisma.$extends({
                 actorId,
                 "UPDATE",
                 model,
-                result.Id || extractIdFromWhere(args.where),
+                result.id || result.Id || extractIdFromWhere(args.where),
                 diff.oldDiff,
                 diff.newDiff,
                 ipAddress,
@@ -180,7 +180,7 @@ const prisma = basePrisma.$extends({
               actorId,
               "CREATE",
               model,
-              result.Id || "unknown",
+              result.id || result.Id || "unknown",
               null,
               newSanitized,
               ipAddress,
@@ -212,12 +212,12 @@ const prisma = basePrisma.$extends({
 
         let result;
         if (SOFT_DELETE_MODELS.has(model)) {
-          // "Xóa" ở đây thực chất là update DeletedAt/DeletedBy, không đụng tới query() gốc
+          // "Xóa" ở đây thực chất là update deletedAt/deletedBy, không đụng tới query() gốc
           // (nếu không sẽ xóa thật khỏi DB, mất luôn dữ liệu cần giữ để tra cứu lịch sử)
           const accessor = getBaseModelAccessor(basePrisma, model);
           result = await accessor.update({
             where: args.where,
-            data: { DeletedAt: new Date(), DeletedBy: actorId || "system" },
+            data: { deletedAt: new Date(), deletedBy: actorId || "system" },
           });
         } else {
           result = await query(args);
@@ -233,7 +233,7 @@ const prisma = basePrisma.$extends({
             actorId,
             actionName,
             model,
-            result.Id || extractIdFromWhere(args.where),
+            result.id || result.Id || extractIdFromWhere(args.where),
             oldSanitized,
             null,
             ipAddress,
@@ -269,7 +269,7 @@ const prisma = basePrisma.$extends({
           const accessor = getBaseModelAccessor(basePrisma, model);
           result = await accessor.updateMany({
             where: args.where,
-            data: { DeletedAt: new Date(), DeletedBy: actorId || "system" },
+            data: { deletedAt: new Date(), deletedBy: actorId || "system" },
           });
         } else {
           result = await query(args);
@@ -280,7 +280,7 @@ const prisma = basePrisma.$extends({
           AUDITED_MODELS.has(model) &&
           actorId
         ) {
-          const ids = affectedRecords.map((r) => r.Id).filter(Boolean);
+          const ids = affectedRecords.map((r) => r.id || r.Id).filter(Boolean);
           const actionName = SOFT_DELETE_MODELS.has(model)
             ? "SOFT_DELETE"
             : "DELETE";
