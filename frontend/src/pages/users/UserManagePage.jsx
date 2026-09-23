@@ -17,6 +17,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ROLES, ROLE_LABELS } from '../../utils/constants';
 import userApi from '../../api/userApi';
 import orgApi from '../../api/orgApi';
+import memberApi from '../../api/memberApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import GlassSelect from '../../components/common/GlassSelect';
 import GlassSearch from '../../components/common/GlassSearch';
@@ -29,6 +30,7 @@ export default function UserManagePage() {
 
   const [users, setUsers] = useState([]);
   const [orgs, setOrgs] = useState([]);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // State cho các bộ lọc danh sách tài khoản
@@ -65,7 +67,17 @@ export default function UserManagePage() {
 
   useEffect(() => {
     fetchOrgs();
+    fetchMembers();
   }, []);
+
+  const fetchMembers = async () => {
+    try {
+      const res = await memberApi.getAll();
+      setMembers(res.data || []);
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     if (!isMounted.current) {
@@ -148,6 +160,7 @@ export default function UserManagePage() {
       hoTen: '',
       role: ROLES.BI_THU,
       orgId: '',
+      dangVienId: '',
     });
     setFormErrors({});
     setShowFormModal(true);
@@ -161,6 +174,7 @@ export default function UserManagePage() {
       hoTen: u.hoTen,
       role: u.role,
       orgId: u.orgId || '',
+      dangVienId: u.dangVienId || '',
     });
     setFormErrors({});
     setShowFormModal(true);
@@ -186,6 +200,10 @@ export default function UserManagePage() {
       errors.orgId = 'Bí thư bắt buộc phải chọn một Tổ chức Đảng.';
     }
 
+    if (formData.role === ROLES.DANG_VIEN && !formData.dangVienId) {
+      errors.dangVienId = 'Đảng viên bắt buộc phải chọn một hồ sơ Đảng viên liên kết.';
+    }
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -197,7 +215,8 @@ export default function UserManagePage() {
         const payload = {
           hoTen: formData.hoTen.trim(),
           role: formData.role,
-          orgId: formData.role === ROLES.BI_THU ? formData.orgId : null,
+          orgId: formData.role === ROLES.CAN_BO_CHINH_TRI ? null : (formData.orgId || null),
+          dangVienId: formData.role === ROLES.DANG_VIEN ? formData.dangVienId : null,
         };
         await userApi.update(editingUser.id, payload);
         toast.success('Cập nhật tài khoản thành công.');
@@ -207,7 +226,8 @@ export default function UserManagePage() {
           password: formData.password,
           hoTen: formData.hoTen.trim(),
           role: formData.role,
-          orgId: formData.role === ROLES.BI_THU ? formData.orgId : null,
+          orgId: formData.role === ROLES.CAN_BO_CHINH_TRI ? null : (formData.orgId || null),
+          dangVienId: formData.role === ROLES.DANG_VIEN ? formData.dangVienId : null,
         };
         await userApi.create(payload);
         toast.success('Tạo tài khoản thành công.');
@@ -536,27 +556,65 @@ export default function UserManagePage() {
                   {formErrors.hoTen && <span style={{ color: 'var(--color-error)', fontSize: 'var(--font-size-xs)' }}>{formErrors.hoTen}</span>}
                 </div>
 
-                <div className="form-group">
+                <div className="form-group" style={{ gridColumn: formData.role === ROLES.DANG_VIEN ? 'span 2' : 'span 1' }}>
                   <label className="form-label">Vai trò</label>
                   <GlassSelect
                     value={formData.role}
-                    onChange={(val) => setFormData((f) => ({ ...f, role: val, orgId: val === ROLES.CAN_BO_CHINH_TRI ? '' : f.orgId }))}
+                    onChange={(val) =>
+                      setFormData((f) => ({
+                        ...f,
+                        role: val,
+                        orgId: val === ROLES.CAN_BO_CHINH_TRI ? '' : f.orgId,
+                        dangVienId: val === ROLES.DANG_VIEN ? f.dangVienId : '',
+                      }))
+                    }
                     options={Object.keys(ROLES).map((key) => ({ id: key, name: ROLE_LABELS[key] }))}
                     showEmptyOption={false}
                   />
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Tổ chức sinh hoạt {formData.role === ROLES.BI_THU && '*'}</label>
-                  <GlassSelect
-                    value={formData.orgId}
-                    onChange={(val) => setFormData((f) => ({ ...f, orgId: val }))}
-                    options={orgs.map((o) => ({ id: o.id, name: o.name }))}
-                    placeholder="Chọn tổ chức Đảng"
-                    disabled={formData.role === ROLES.CAN_BO_CHINH_TRI}
-                  />
-                  {formErrors.orgId && <span style={{ color: 'var(--color-error)', fontSize: 'var(--font-size-xs)' }}>{formErrors.orgId}</span>}
-                </div>
+                {formData.role === ROLES.DANG_VIEN && (
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label">Chọn hồ sơ Đảng viên liên kết *</label>
+                    <GlassSelect
+                      value={formData.dangVienId}
+                      onChange={(val) => {
+                        const m = members.find((mem) => mem.Id === val || mem.id === val);
+                        setFormData((f) => ({
+                          ...f,
+                          dangVienId: val,
+                          hoTen: m ? (m.HoTenDangDung || m.hoTen) : f.hoTen,
+                          orgId: m ? (m.ToChucDangId || m.toChucDangId || f.orgId) : f.orgId,
+                        }));
+                      }}
+                      options={members.map((m) => ({
+                        id: m.Id || m.id,
+                        name: `${m.HoTenDangDung || m.hoTen} - Số thẻ: ${m.SoTheDangVien || m.soTheDangVien || m.SoLyLich || 'Chưa có'} (${m.ToChucDang?.Ten || m.toChucDang?.ten || 'Chi bộ'})`,
+                      }))}
+                      placeholder="-- Chọn Đảng viên để liên kết tài khoản --"
+                      disabled={!!editingUser}
+                    />
+                    {formErrors.dangVienId && (
+                      <span style={{ color: 'var(--color-error)', fontSize: 'var(--font-size-xs)' }}>
+                        {formErrors.dangVienId}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {formData.role !== ROLES.DANG_VIEN && (
+                  <div className="form-group">
+                    <label className="form-label">Tổ chức sinh hoạt {formData.role === ROLES.BI_THU && '*'}</label>
+                    <GlassSelect
+                      value={formData.orgId}
+                      onChange={(val) => setFormData((f) => ({ ...f, orgId: val }))}
+                      options={orgs.map((o) => ({ id: o.id, name: o.name }))}
+                      placeholder="Chọn tổ chức Đảng"
+                      disabled={formData.role === ROLES.CAN_BO_CHINH_TRI}
+                    />
+                    {formErrors.orgId && <span style={{ color: 'var(--color-error)', fontSize: 'var(--font-size-xs)' }}>{formErrors.orgId}</span>}
+                  </div>
+                )}
               </div>
 
               {!editingUser && (

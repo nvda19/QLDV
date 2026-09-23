@@ -3,6 +3,8 @@ import { FiArrowLeft, FiPrinter, FiEdit, FiTrash2, FiDownload } from '../icons';
 import toast from 'react-hot-toast';
 import memberApi from '../../api/memberApi';
 import { downloadBlob } from '../../utils/helpers';
+import { useAuth } from '../../contexts/AuthContext';
+import { ROLES } from '../../utils/constants';
 
 export default function DetailToolbar({
   member,
@@ -11,6 +13,8 @@ export default function DetailToolbar({
   navigate,
   setDeleteModalOpen
 }) {
+  const { user } = useAuth();
+  const isDangVien = user?.role === ROLES.DANG_VIEN;
   const [exporting, setExporting] = useState(false);
 
   const handleExportWord = async () => {
@@ -48,12 +52,14 @@ export default function DetailToolbar({
       }}
     >
       <div style={{ display: "flex", gap: "var(--spacing-md)" }}>
-        <button
-          className="btn btn-outline btn-sm"
-          onClick={() => navigate("/members")}
-        >
-          Quay lại danh sách
-        </button>
+        {!isDangVien && (
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => navigate("/members")}
+          >
+            Quay lại danh sách
+          </button>
+        )}
       </div>
       <div
         className="toolbar-title font-bold text-accent"

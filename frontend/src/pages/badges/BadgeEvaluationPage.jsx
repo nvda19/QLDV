@@ -640,13 +640,15 @@ export default function BadgeEvaluationPage() {
             >
               {actionLoading ? "Đang kiểm tra" : "Kiểm tra điều kiện"}
             </button>
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={handleOpenPropose}
-              title="Thêm đề nghị thủ công (Cấp lại / Truy tặng)"
-            >
-              Đề nghị thủ công
-            </button>
+            {isBiThu && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={handleOpenPropose}
+                title="Thêm đề nghị thủ công (Cấp lại / Truy tặng)"
+              >
+                Đề nghị thủ công
+              </button>
+            )}
             {isBiThu ? (
               <>
                 <button

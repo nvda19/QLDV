@@ -38,11 +38,13 @@ export const PARTY_POSITIONS = [
 export const ROLES = {
   BI_THU: "BI_THU",
   CAN_BO_CHINH_TRI: "CAN_BO_CHINH_TRI",
+  DANG_VIEN: "DANG_VIEN",
 };
 
 export const ROLE_LABELS = {
   BI_THU: "Bí thư",
   CAN_BO_CHINH_TRI: "Cán bộ chính trị",
+  DANG_VIEN: "Đảng viên",
 };
 
 export const GENDER_OPTIONS = [

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { formatDateForInput } from '../../utils/helpers';
 import { useAuth } from '../../contexts/AuthContext';
 import memberApi from '../../api/memberApi';
+import orgApi from '../../api/orgApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { ROLES } from '../../utils/constants';
 
@@ -22,6 +23,7 @@ import FamilySection from '../../components/members/FamilySection';
 import EconomicSection from '../../components/members/EconomicSection';
 
 const initialFormData = {
+  toChucDangId: '', // Tổ chức Đảng (Chi bộ) sinh hoạt
   fullName: '',
   birthName: '',
   gender: '',
@@ -129,15 +131,31 @@ export default function MemberFormPage() {
   const isEdit = Boolean(id);
 
   const [formData, setFormData] = useState(initialFormData);
+  const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
+    fetchOrganizations();
     if (isEdit) {
       fetchMember();
+    } else if (user?.role === ROLES.BI_THU && user?.orgId) {
+      setFormData((prev) => ({
+        ...prev,
+        toChucDangId: user.orgId,
+      }));
     }
-  }, [id]);
+  }, [id, user]);
+
+  const fetchOrganizations = async () => {
+    try {
+      const res = await orgApi.getAll();
+      setOrganizations(res.data || []);
+    } catch (err) {
+      console.error('Không thể tải danh sách tổ chức Đảng:', err);
+    }
+  };
 
   // Tự động giãn chiều cao cho toàn bộ ô textarea theo nội dung nhập
   useEffect(() => {
@@ -184,8 +202,8 @@ export default function MemberFormPage() {
       const isCanBo = user?.role === ROLES.CAN_BO_CHINH_TRI;
       
       const canEdit =
-        (isBiThu && m.ToChucDangId === user?.orgId) ||
-        (isCanBo && m.ToChucDang?.ParentId === null);
+        (isBiThu && (m.ToChucDangId === user?.orgId || m.toChucDangId === user?.orgId)) ||
+        isCanBo;
         
       if (!canEdit) {
         toast.error("Bạn không có quyền chỉnh sửa hồ sơ này!");
@@ -196,6 +214,7 @@ export default function MemberFormPage() {
       // API trả về theo tên field của DB (PascalCase), còn state form dùng key camelCase nội bộ,
       // nên đoạn này đóng vai trò lớp chuyển đổi DB sang form (chiều ngược lại nằm ở handleSubmit).
       setFormData({
+        toChucDangId: m.ToChucDangId || m.toChucDangId || '',
         fullName: m.HoTenDangDung || '',
         birthName: m.HoTenKhaiSinh || '',
         gender: m.GioiTinh || '',
@@ -457,6 +476,9 @@ export default function MemberFormPage() {
 
   const validate = () => {
     const newErrors = {};
+    if (user?.role === ROLES.CAN_BO_CHINH_TRI && !formData.toChucDangId) {
+      newErrors.toChucDangId = 'Vui lòng chọn Tổ chức Đảng (Chi bộ) sinh hoạt.';
+    }
     if (!formData.fullName || !formData.fullName.trim()) {
       newErrors.fullName = 'Họ tên đang dùng là bắt buộc.';
     }
@@ -605,6 +627,7 @@ export default function MemberFormPage() {
     try {
       // Chuyển ngược lại từ state form (camelCase nội bộ) sang payload đúng tên field DB (PascalCase)
       const payload = {
+        ToChucDangId: formData.toChucDangId || (user?.role === ROLES.BI_THU ? user?.orgId : undefined),
         HoTenDangDung: formData.fullName,
         HoTenKhaiSinh: formData.birthName,
         GioiTinh: formData.gender,
@@ -802,6 +825,9 @@ export default function MemberFormPage() {
             formData={formData}
             handleChange={handleChange}
             errors={errors}
+            organizations={organizations}
+            user={user}
+            isEdit={isEdit}
           />
 
           {/* Phần 3 - Tuyển dụng, Đoàn thanh niên và quân ngũ (Mục 15-18) */}

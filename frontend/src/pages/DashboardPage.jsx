@@ -33,11 +33,19 @@ export default function DashboardPage() {
     badgeCount: 0,
     orgName: "",
   });
+  const [memberData, setMemberData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if (user?.role === ROLES.DANG_VIEN) {
+          const res = await memberApi.getAll();
+          setMemberData(res.data?.[0] || null);
+          setLoading(false);
+          return;
+        }
+
         const [membersRes, orgsRes] = await Promise.all([
           memberApi.getAll(),
           orgApi.getAll(),
@@ -144,6 +152,139 @@ export default function DashboardPage() {
 
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  if (user?.role === ROLES.DANG_VIEN) {
+    const memberId = user?.memberId || user?.dangVienId;
+    return (
+      <div className="page animate-fade-in">
+        {/* Banner chào mừng đảng viên */}
+        <div className="dashboard-hero">
+          <div className="hero-overlay"></div>
+          <h1 className="hero-title">XIN CHÀO ĐỒNG CHÍ {user?.hoTen?.toUpperCase() || ''}</h1>
+          <h2 className="hero-subtitle">CỔNG THÔNG TIN HỒ SƠ ĐẢNG VIÊN CÁ NHÂN</h2>
+          <div className="hero-divider"></div>
+          <p className="hero-description">
+            Tra cứu thông tin hồ sơ lý lịch đảng viên, lịch sử cấp bậc quân hàm, các quyết định khen thưởng, kỷ luật và thông báo từ chi bộ.
+          </p>
+        </div>
+
+        {/* Thẻ điều hướng cá nhân */}
+        <div className="features-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+          <div className="feature-card">
+            <div>
+              <div className="feature-card-header">
+                <div className="feature-card-icon">
+                  <FiUsers />
+                </div>
+                <h3 className="feature-card-title">Hồ sơ lý lịch đảng viên</h3>
+              </div>
+              <p className="feature-card-body">
+                Xem toàn bộ thông tin lý lịch cá nhân, thông tin gia đình, quá trình đào tạo, quá trình công tác và lịch sử thăng quân hàm của bản thân.
+              </p>
+            </div>
+            <div className="feature-card-footer">
+              <button
+                className="feature-card-btn"
+                onClick={() => navigate(memberId ? `/members/${memberId}` : '/members')}
+              >
+                Xem chi tiết hồ sơ <FiArrowRight />
+              </button>
+            </div>
+          </div>
+
+          <div className="feature-card">
+            <div>
+              <div className="feature-card-header">
+                <div className="feature-card-icon">
+                  <FiAward />
+                </div>
+                <h3 className="feature-card-title">Văn bản & Quyết định</h3>
+              </div>
+              <p className="feature-card-body">
+                Tra cứu, xem trước và tải về các văn bản quyết định khen thưởng, kỷ luật, xếp loại Đảng viên hoặc trao tặng Huy hiệu Đảng liên quan đến bản thân.
+              </p>
+            </div>
+            <div className="feature-card-footer">
+              <button
+                className="feature-card-btn"
+                onClick={() => navigate('/decisions')}
+              >
+                Xem quyết định <FiArrowRight />
+              </button>
+            </div>
+          </div>
+
+          <div className="feature-card">
+            <div>
+              <div className="feature-card-header">
+                <div className="feature-card-icon">
+                  <FiCheckSquare />
+                </div>
+                <h3 className="feature-card-title">Thông báo hệ thống</h3>
+              </div>
+              <p className="feature-card-body">
+                Tiếp nhận các thông báo từ chi bộ, nhắc nhở công việc và cập nhật trạng thái hồ sơ của đồng chí.
+              </p>
+            </div>
+            <div className="feature-card-footer">
+              <button
+                className="feature-card-btn"
+                onClick={() => navigate('/notifications')}
+              >
+                Xem thông báo <FiArrowRight />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bảng tóm tắt thông tin nhanh của Đảng viên */}
+        {memberData && (
+          <div className="card" style={{ marginTop: 'var(--spacing-xl)' }}>
+            <div className="card-header">
+              <h3 className="card-title">Thông tin Đảng viên tóm tắt</h3>
+              <span className="text-muted" style={{ fontSize: 'var(--font-size-sm)' }}>
+                Chi bộ: <strong>{memberData.ToChucDang?.Ten || 'Chưa phân công'}</strong>
+              </span>
+            </div>
+            <div className="form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--spacing-lg)' }}>
+              <div>
+                <span className="text-muted" style={{ fontSize: 'var(--font-size-xs)' }}>Số thẻ Đảng viên</span>
+                <p style={{ fontWeight: '600', margin: '4px 0 0 0' }}>{memberData.SoTheDangVien || 'Chưa cấp'}</p>
+              </div>
+              <div>
+                <span className="text-muted" style={{ fontSize: 'var(--font-size-xs)' }}>Số lý lịch</span>
+                <p style={{ fontWeight: '600', margin: '4px 0 0 0' }}>{memberData.SoLyLich || '—'}</p>
+              </div>
+              <div>
+                <span className="text-muted" style={{ fontSize: 'var(--font-size-xs)' }}>Ngày vào Đảng</span>
+                <p style={{ fontWeight: '600', margin: '4px 0 0 0' }}>
+                  {memberData.NgayVaoDang ? new Date(memberData.NgayVaoDang).toLocaleDateString('vi-VN') : '—'}
+                </p>
+              </div>
+              <div>
+                <span className="text-muted" style={{ fontSize: 'var(--font-size-xs)' }}>Ngày chính thức</span>
+                <p style={{ fontWeight: '600', margin: '4px 0 0 0' }}>
+                  {memberData.NgayChinhThuc ? new Date(memberData.NgayChinhThuc).toLocaleDateString('vi-VN') : 'Đảng viên dự bị'}
+                </p>
+              </div>
+              <div>
+                <span className="text-muted" style={{ fontSize: 'var(--font-size-xs)' }}>Cấp bậc / Chức vụ</span>
+                <p style={{ fontWeight: '600', margin: '4px 0 0 0' }}>
+                  {(memberData.CapBac || '—') + ' / ' + (memberData.ChucVu || '—')}
+                </p>
+              </div>
+              <div>
+                <span className="text-muted" style={{ fontSize: 'var(--font-size-xs)' }}>Khen thưởng</span>
+                <p style={{ fontWeight: '600', margin: '4px 0 0 0', color: 'var(--color-accent)' }}>
+                  {memberData.KhenThuong || 'Chưa ghi nhận'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   }
 
   const features = [

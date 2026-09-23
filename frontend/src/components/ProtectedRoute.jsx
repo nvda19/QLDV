@@ -111,7 +111,7 @@ function ForceChangePassword() {
   );
 }
 
-export default function ProtectedRoute({ children }) {
+export default function ProtectedRoute({ children, allowedRoles }) {
   const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
 
@@ -125,6 +125,10 @@ export default function ProtectedRoute({ children }) {
 
   if (user?.mustChangePassword) {
     return <ForceChangePassword />;
+  }
+
+  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
+    return <Navigate to="/" replace />;
   }
 
   return children;

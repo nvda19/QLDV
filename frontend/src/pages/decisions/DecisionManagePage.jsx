@@ -20,6 +20,8 @@ import PageHeader from '../../components/common/PageHeader';
 import DecisionPreviewModal from '../../components/common/DecisionPreviewModal';
 import GlassSelect from '../../components/common/GlassSelect';
 import GlassSearch from '../../components/common/GlassSearch';
+import { useAuth } from '../../contexts/AuthContext';
+import { ROLES } from '../../utils/constants';
 
 const LOAI_QUYET_DINH_OPTIONS = [
   { id: 'KHEN_THUONG', name: 'Khen thưởng / Xếp loại' },
@@ -33,6 +35,9 @@ const LOAI_QUYET_DINH_LABELS = LOAI_QUYET_DINH_OPTIONS.reduce((acc, o) => {
 }, {});
 
 export default function DecisionManagePage() {
+  const { user } = useAuth();
+  const canManage = user?.role === ROLES.CAN_BO_CHINH_TRI || user?.role === ROLES.BI_THU;
+
   const [decisions, setDecisions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -207,9 +212,11 @@ export default function DecisionManagePage() {
         title="Quản lý quyết định"
         subtitle="Hệ thống lưu trữ, liên kết các văn bản quyết định (Khen thưởng, Thăng hàm, Huy hiệu) sử dụng chung cho nhiều đảng viên."
         actions={
-          <button className="btn btn-primary" onClick={handleOpenAddModal}>
-            <FiPlus /> Thêm Quyết định
-          </button>
+          canManage ? (
+            <button className="btn btn-primary" onClick={handleOpenAddModal}>
+              <FiPlus /> Thêm Quyết định
+            </button>
+          ) : null
         }
       />
 
@@ -278,7 +285,7 @@ export default function DecisionManagePage() {
                   <th>Trích yếu / Tên quyết định</th>
                   <th>Ngày ban hành</th>
                   <th>Tài liệu đính kèm</th>
-                  <th style={{ width: '120px', textAlign: 'right' }}>Thao tác</th>
+                  {canManage && <th style={{ width: '120px', textAlign: 'right' }}>Thao tác</th>}
                 </tr>
               </thead>
               <tbody>
@@ -335,25 +342,27 @@ export default function DecisionManagePage() {
                         <span className="text-muted" style={{ fontStyle: 'italic' }}>Chưa có file</span>
                       )}
                     </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                        <button
-                          className="btn-icon"
-                          title="Chỉnh sửa thông tin quyết định"
-                          onClick={() => handleOpenEditModal(d)}
-                        >
-                          <FiEdit />
-                        </button>
-                        <button
-                          className="btn-icon"
-                          title="Xóa quyết định"
-                          onClick={() => setDeleteTarget(d)}
-                          style={{ color: 'var(--color-error)' }}
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </div>
-                    </td>
+                    {canManage && (
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                          <button
+                            className="btn-icon"
+                            title="Chỉnh sửa thông tin quyết định"
+                            onClick={() => handleOpenEditModal(d)}
+                          >
+                            <FiEdit />
+                          </button>
+                          <button
+                            className="btn-icon"
+                            title="Xóa quyết định"
+                            onClick={() => setDeleteTarget(d)}
+                            style={{ color: 'var(--color-error)' }}
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

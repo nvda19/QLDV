@@ -18,6 +18,7 @@ import BadgeEvaluationPage from './pages/badges/BadgeEvaluationPage';
 import UserManagePage from './pages/users/UserManagePage';
 import NotificationPage from './pages/notifications/NotificationPage';
 import DecisionManagePage from './pages/decisions/DecisionManagePage';
+import { ROLES } from './utils/constants';
 
 
 function App() {
@@ -62,17 +63,80 @@ function App() {
         >
           <Route index element={<DashboardPage />} />
           <Route path="members" element={<MemberListPage />} />
-          <Route path="members/new" element={<MemberFormPage />} />
+          <Route
+            path="members/new"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU]}>
+                <MemberFormPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="members/:id" element={<MemberDetailPage />} />
-          <Route path="members/:id/edit" element={<MemberFormPage />} />
-          <Route path="organizations" element={<OrgManagePage />} />
-          <Route path="statistics/members" element={<MemberStatsPage />} />
-          <Route path="statistics/committee" element={<CommitteeStatsPage />} />
-          <Route path="statistics/activity" element={<ActivityStatsPage />} />
-          <Route path="evaluations" element={<MemberEvaluationPage />} />
-          <Route path="badges" element={<BadgeEvaluationPage />} />
+          <Route
+            path="members/:id/edit"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU]}>
+                <MemberFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="organizations"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU]}>
+                <OrgManagePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="statistics/members"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU]}>
+                <MemberStatsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="statistics/committee"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CAN_BO_CHINH_TRI]}>
+                <CommitteeStatsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="statistics/activity"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU]}>
+                <ActivityStatsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="evaluations"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU]}>
+                <MemberEvaluationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="badges"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU]}>
+                <BadgeEvaluationPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="decisions" element={<DecisionManagePage />} />
-          <Route path="users" element={<UserManagePage />} />
+          <Route
+            path="users"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CAN_BO_CHINH_TRI]}>
+                <UserManagePage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="notifications" element={<NotificationPage />} />
         </Route>
       </Routes>

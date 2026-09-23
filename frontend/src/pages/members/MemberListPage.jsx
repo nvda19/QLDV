@@ -212,9 +212,16 @@ export default function MemberListPage() {
   const canWrite = isBiThu || isCanBo;
 
   useEffect(() => {
+    if (user?.role === ROLES.DANG_VIEN) {
+      const targetId = user.memberId || user.dangVienId;
+      if (targetId) {
+        navigate(`/members/${targetId}`, { replace: true });
+        return;
+      }
+    }
     fetchMembers();
     fetchOrganizations();
-  }, []);
+  }, [user]);
 
   // Mỗi khi đổi đảng viên đang chọn thì gọi API lấy lại hồ sơ đầy đủ
   useEffect(() => {

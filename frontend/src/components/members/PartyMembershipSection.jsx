@@ -1,8 +1,20 @@
 import React from 'react';
-import { PARTY_POSITIONS } from '../../utils/constants';
+import { PARTY_POSITIONS, ROLES } from '../../utils/constants';
 import GlassSelect from '../common/GlassSelect';
 
-export default function PartyMembershipSection({ formData, handleChange, errors }) {
+export default function PartyMembershipSection({
+  formData,
+  handleChange,
+  errors,
+  organizations = [],
+  user,
+  isEdit,
+}) {
+  const isCanBo = user?.role === ROLES.CAN_BO_CHINH_TRI;
+  const userOrg = organizations.find(
+    (o) => (o.id || o.Id) === (formData.toChucDangId || user?.orgId),
+  );
+
   return (
     <fieldset className="form-fieldset">
       <legend>
@@ -136,9 +148,50 @@ export default function PartyMembershipSection({ formData, handleChange, errors 
         </div>
 
         {/* Từ đây trở xuống là nhóm mục 14, ghi nhận nơi sinh hoạt và chức vụ Đảng hiện tại */}
+        <div className="form-group form-full">
+          <label className="form-label" htmlFor="toChucDangId">
+            <span className="section-number">14)</span> Tổ chức Đảng (Chi bộ) quản lý sinh hoạt *
+          </label>
+          {isCanBo ? (
+            <GlassSelect
+              value={formData.toChucDangId || ''}
+              onChange={(val) => {
+                handleChange({ target: { name: 'toChucDangId', value: val } });
+                if (!formData.noiSinhHoatDang) {
+                  const selOrg = organizations.find((o) => (o.id || o.Id) === val);
+                  if (selOrg) {
+                    handleChange({ target: { name: 'noiSinhHoatDang', value: selOrg.ten || selOrg.Ten } });
+                  }
+                }
+              }}
+              options={organizations.map((org) => ({
+                id: org.id || org.Id,
+                name: org.ten || org.Ten,
+              }))}
+              placeholder="-- Chọn Chi bộ / Tổ chức Đảng sinh hoạt --"
+              style={{ width: '100%' }}
+            />
+          ) : (
+            <div
+              style={{
+                padding: '10px 14px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '8px',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-main)',
+                fontSize: '14px',
+                fontWeight: 500,
+              }}
+            >
+              {userOrg?.ten || userOrg?.Ten || 'Chi bộ đang phụ trách'}
+            </div>
+          )}
+          {errors?.toChucDangId && <div className="form-error">{errors.toChucDangId}</div>}
+        </div>
+
         <div className="form-group">
           <label className="form-label" htmlFor="noiSinhHoatDang">
-            <span className="section-number">14)</span> Nơi sinh hoạt Đảng hiện nay
+            Nơi sinh hoạt Đảng hiện nay
           </label>
           <input
             id="noiSinhHoatDang"
@@ -159,6 +212,7 @@ export default function PartyMembershipSection({ formData, handleChange, errors 
             onChange={(val) => handleChange({ target: { name: 'chucVuDang', value: val } })}
             options={PARTY_POSITIONS}
             placeholder="Không có / Đảng viên thường"
+            style={{ width: '100%' }}
           />
         </div>
       </div>
