@@ -8,18 +8,38 @@ const {
   mapListToFrontend,
   mapToDb,
 } = require("../../domain/mappers/decision.mapper");
+const { ROLES } = require("../../domain/constants/member.constants");
 const crypto = require("crypto");
 
 /**
  * Lấy danh sách toàn bộ quyết định
  * @param {object} query - Truy vấn
+ * @param {object} [user] - Thông tin người dùng đăng nhập
  * @returns {Promise<Array<object>>} - Danh sách quyết định
  */
-const getAllDecisions = async (query = {}) => {
+const getAllDecisions = async (query = {}, user = null) => {
   const where = {};
   if (query.LoaiQuyetDinh) {
     where.LoaiQuyetDinh = query.LoaiQuyetDinh;
   }
+  if (query.loaiQuyetDinh) {
+    where.loaiQuyetDinh = query.loaiQuyetDinh;
+  }
+
+  // Nếu là Đảng viên, chỉ xem các quyết định liên quan đến bản thân
+  if (user && user.role === ROLES.DANG_VIEN) {
+    const memberId = user.memberId || user.dangVienId;
+    if (!memberId) {
+      return [];
+    }
+    where.OR = [
+      { danhGiaDangViens: { some: { dangVienId: memberId } } },
+      { lichSuQuanHams: { some: { dangVienId: memberId } } },
+      { deXuatHuyHieus: { some: { dangVienId: memberId } } },
+      { khenThuongKyLuats: { some: { dangVienId: memberId } } },
+    ];
+  }
+
   const decisions = await decisionRepository.findAll(where);
   return mapListToFrontend(decisions);
 };
@@ -27,13 +47,31 @@ const getAllDecisions = async (query = {}) => {
 /**
  * Chi tiết quyết định theo ID
  * @param {string} id - ID của quyết định
+ * @param {object} [user] - Thông tin người dùng đăng nhập
  * @returns {Promise<object>} - Thông tin quyết định
  */
-const getDecisionById = async (id) => {
+const getDecisionById = async (id, user = null) => {
   const decision = await decisionRepository.findByIdWithRelations(id);
   if (!decision) {
     throw new Error("Không tìm thấy thông tin quyết định");
   }
+
+  // Đảng viên chỉ được xem quyết định liên quan đến chính mình
+  if (user && user.role === ROLES.DANG_VIEN) {
+    const memberId = user.memberId || user.dangVienId;
+    const isRelated =
+      decision.danhGiaDangViens?.some((d) => (d.dangVienId || d.DangVienId) === memberId) ||
+      decision.lichSuQuanHams?.some((h) => (h.dangVienId || h.DangVienId) === memberId) ||
+      decision.deXuatHuyHieus?.some((x) => (x.dangVienId || x.DangVienId) === memberId) ||
+      decision.khenThuongKyLuats?.some((k) => (k.dangVienId || k.DangVienId) === memberId);
+
+    if (!isRelated) {
+      const error = new Error("Bạn không có quyền truy cập quyết định này");
+      error.statusCode = 403;
+      throw error;
+    }
+  }
+
   return mapToFrontend(decision);
 };
 

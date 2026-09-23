@@ -16,13 +16,13 @@ router.use(auditContextMiddleware);
 
 router.get(
   "/",
-  authorize(ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU),
+  authorize(ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU, ROLES.DANG_VIEN),
   decisionController.getAllDecisions
 );
 
 router.get(
   "/:id",
-  authorize(ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU),
+  authorize(ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU, ROLES.DANG_VIEN),
   decisionController.getDecisionById
 );
 

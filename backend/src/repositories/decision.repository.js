@@ -10,6 +10,9 @@ const decisionDetailInclude = {
   deXuatHuyHieus: {
     include: { dangVien: { include: { lyLichCaNhan: true } } },
   },
+  khenThuongKyLuats: {
+    include: { dangVien: { include: { lyLichCaNhan: true } } },
+  },
 };
 
 /**
@@ -62,6 +65,11 @@ function attachDecisionAliases(qd) {
     const list = qd.deXuatHuyHieus || qd.DeXuatHuyHieus;
     qd.deXuatHuyHieus = list;
     qd.DeXuatHuyHieus = list;
+  }
+  if (qd.khenThuongKyLuats || qd.KhenThuongKyLuats) {
+    const list = qd.khenThuongKyLuats || qd.KhenThuongKyLuats;
+    qd.khenThuongKyLuats = list;
+    qd.KhenThuongKyLuats = list;
   }
   return qd;
 }

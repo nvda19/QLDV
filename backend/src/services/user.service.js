@@ -1,5 +1,7 @@
 const userRepository = require("../repositories/user.repository");
 const orgRepository = require("../repositories/org.repository");
+const memberRepository = require("../repositories/member/member.repository");
+const prisma = require("../infrastructure/database/prisma");
 const bcrypt = require("bcryptjs");
 const { ROLES } = require("../domain/constants/member.constants");
 
@@ -25,27 +27,59 @@ const validatePassword = (password) => {
 const getAllUsers = async (filters = {}) => {
   const users = await userRepository.findAll(filters);
 
-  return users.map((u) => ({
-    id: u.Id,
-    username: u.TenDangNhap,
-    hoTen: u.HoTen,
-    role: u.VaiTro,
-    orgId: u.ToChucDangId,
-    orgName: u.ToChucDang ? u.ToChucDang.Ten : null,
-    status: u.TrangThai,
-    createdAt: u.CreatedAt,
-  }));
+  return users.map((u) => {
+    const dv = u.DangVien || u.dangVien;
+    const ll = dv?.LyLichCaNhan || dv?.lyLichCaNhan;
+    return {
+      id: u.Id,
+      username: u.TenDangNhap,
+      hoTen: u.HoTen,
+      role: u.VaiTro,
+      orgId: u.ToChucDangId,
+      orgName: u.ToChucDang ? u.ToChucDang.Ten : null,
+      dangVienId: u.DangVienId || u.dangVienId || null,
+      dangVien: dv ? {
+        id: dv.Id || dv.id,
+        soTheDangVien: dv.SoTheDangVien || dv.soTheDangVien,
+        hoTen: ll?.HoTenDangDung || ll?.hoTenDangDung || null,
+      } : null,
+      status: u.TrangThai,
+      createdAt: u.CreatedAt,
+    };
+  });
 };
 
 /**
- * Tạo tài khoản người dùng mới (Bí thư/Cán bộ chính trị...).
+ * Tạo tài khoản người dùng mới (Bí thư/Cán bộ chính trị/Đảng viên).
  * @param {Object} userData
  * @returns {Promise<Object>}
  */
 const createUser = async (userData) => {
-  const { username, password, hoTen, role, orgId } = userData;
+  const { username, password, hoTen, role, orgId, dangVienId } = userData;
 
-  if (!username || !password || !hoTen || !role) {
+  let resolvedOrgId = orgId || null;
+  let resolvedHoTen = hoTen;
+  let resolvedDangVienId = null;
+
+  // Ràng buộc vai trò Đảng viên: Bắt buộc gắn với 1 hồ sơ Đảng viên
+  if (role === ROLES.DANG_VIEN) {
+    if (!dangVienId) {
+      throw new Error("Tài khoản Đảng viên bắt buộc phải liên kết với một hồ sơ Đảng viên.");
+    }
+    const member = await memberRepository.findById(dangVienId);
+    if (!member) {
+      throw new Error("Hồ sơ Đảng viên không tồn tại.");
+    }
+    const existingLinked = await userRepository.findByMemberId(dangVienId);
+    if (existingLinked) {
+      throw new Error("Hồ sơ Đảng viên này đã có tài khoản người dùng.");
+    }
+    resolvedDangVienId = dangVienId;
+    resolvedOrgId = resolvedOrgId || member.ToChucDangId || member.toChucDangId || null;
+    resolvedHoTen = hoTen || member.LyLichCaNhan?.HoTenDangDung || member.lyLichCaNhan?.hoTenDangDung || member.HoTenDangDung || member.hoTen;
+  }
+
+  if (!username || !password || !resolvedHoTen || !role) {
     throw new Error(
       "Vui lòng nhập đầy đủ các trường bắt buộc (Username, Password, Họ tên, Vai trò).",
     );
@@ -63,12 +97,12 @@ const createUser = async (userData) => {
   }
 
   // Ràng buộc Bí thư chi bộ phải đi kèm một Tổ chức Đảng
-  if (role === ROLES.BI_THU && !orgId) {
+  if (role === ROLES.BI_THU && !resolvedOrgId) {
     throw new Error("Bí thư bắt buộc phải được gắn với một Tổ chức Đảng.");
   }
 
-  if (orgId) {
-    const org = await orgRepository.findById(orgId);
+  if (resolvedOrgId) {
+    const org = await orgRepository.findById(resolvedOrgId);
     if (!org) {
       throw new Error("Tổ chức Đảng không tồn tại.");
     }
@@ -79,9 +113,10 @@ const createUser = async (userData) => {
   const newUser = await userRepository.create({
     TenDangNhap: username,
     MatKhauHash: matKhauHash,
-    HoTen: hoTen,
+    HoTen: resolvedHoTen,
     VaiTro: role,
-    ToChucDangId: orgId || null,
+    ToChucDangId: resolvedOrgId,
+    DangVienId: resolvedDangVienId,
     TrangThai: "ACTIVE",
   });
 
@@ -91,6 +126,7 @@ const createUser = async (userData) => {
     hoTen: newUser.HoTen,
     role: newUser.VaiTro,
     orgId: newUser.ToChucDangId,
+    dangVienId: newUser.DangVienId || newUser.dangVienId,
     orgName: newUser.ToChucDang ? newUser.ToChucDang.Ten : null,
     status: newUser.TrangThai,
     createdAt: newUser.CreatedAt,
@@ -105,7 +141,7 @@ const createUser = async (userData) => {
  * @returns {Promise<Object>}
  */
 const updateUser = async (id, userData, currentUserId) => {
-  const { hoTen, role, orgId, status } = userData;
+  const { hoTen, role, orgId, status, dangVienId } = userData;
 
   const existingUser = await userRepository.findById(id);
   if (!existingUser) {
@@ -116,10 +152,30 @@ const updateUser = async (id, userData, currentUserId) => {
     throw new Error("Bạn không thể khóa tài khoản của chính mình.");
   }
 
-  // Ghép giá trị mới với giá trị cũ để kiểm tra ràng buộc trên trạng thái sau khi cập nhật,
-  // vì userData có thể chỉ gửi một phần field.
+  // Ghép giá trị mới với giá trị cũ để kiểm tra ràng buộc trên trạng thái sau khi cập nhật
   const targetRole = role || existingUser.VaiTro;
-  const targetOrgId = orgId !== undefined ? orgId : existingUser.ToChucDangId;
+  let targetOrgId = orgId !== undefined ? orgId : existingUser.ToChucDangId;
+  let targetDangVienId = dangVienId !== undefined ? dangVienId : (existingUser.DangVienId || existingUser.dangVienId);
+
+  if (targetRole === ROLES.DANG_VIEN) {
+    if (!targetDangVienId) {
+      throw new Error("Tài khoản Đảng viên bắt buộc phải liên kết với một hồ sơ Đảng viên.");
+    }
+    const member = await memberRepository.findById(targetDangVienId);
+    if (!member) {
+      throw new Error("Hồ sơ Đảng viên được chọn không tồn tại.");
+    }
+    const existingLinked = await prisma.nguoiDung.findFirst({
+      where: {
+        dangVienId: targetDangVienId,
+        id: { not: id },
+      },
+    });
+    if (existingLinked) {
+      throw new Error("Hồ sơ Đảng viên này đã được liên kết với một tài khoản khác.");
+    }
+    targetOrgId = targetOrgId || member.ToChucDangId || member.toChucDangId || null;
+  }
 
   if (targetRole === ROLES.BI_THU && !targetOrgId) {
     throw new Error("Bí thư bắt buộc phải được gắn với một Tổ chức Đảng.");
@@ -137,6 +193,8 @@ const updateUser = async (id, userData, currentUserId) => {
     VaiTro: role !== undefined ? role : existingUser.VaiTro,
     ToChucDangId:
       orgId !== undefined ? orgId || null : existingUser.ToChucDangId,
+    DangVienId:
+      dangVienId !== undefined ? dangVienId || null : undefined,
     TrangThai: status !== undefined ? status : existingUser.TrangThai,
   });
 
@@ -146,6 +204,7 @@ const updateUser = async (id, userData, currentUserId) => {
     hoTen: updated.HoTen,
     role: updated.VaiTro,
     orgId: updated.ToChucDangId,
+    dangVienId: updated.DangVienId || updated.dangVienId,
     orgName: updated.ToChucDang ? updated.ToChucDang.Ten : null,
     status: updated.TrangThai,
     createdAt: updated.CreatedAt,

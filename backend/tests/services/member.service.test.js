@@ -46,6 +46,7 @@ jest.mock("../../src/repositories/org.repository", () => ({
 }));
 jest.mock("../../src/domain/policies/member.policy", () => ({
   validateWritePermission: jest.fn(),
+  validateReadPermission: jest.fn(),
 }));
 jest.mock("../../src/domain/mappers/member.mapper", () => ({
   mapToFrontend: jest.fn(),
@@ -68,7 +69,7 @@ const memberRepository = require("../../src/repositories/member/member.repositor
 const memberPartyRepository = require("../../src/repositories/member/memberParty.repository");
 const memberHistoryRepository = require("../../src/repositories/member/memberHistory.repository");
 const orgRepository = require("../../src/repositories/org.repository");
-const { validateWritePermission } = require("../../src/domain/policies/member.policy");
+const { validateWritePermission, validateReadPermission } = require("../../src/domain/policies/member.policy");
 const { mapToFrontend } = require("../../src/domain/mappers/member.mapper");
 const prisma = require("../../src/infrastructure/database/prisma");
 const { ROLES } = require("../../src/domain/constants/member.constants");
@@ -303,7 +304,7 @@ describe("getMemberById", () => {
   });
 
   test("không tìm thấy đảng viên -> ném lỗi", async () => {
-    memberRepository.findById.mockResolvedValueOnce(null);
+    validateReadPermission.mockRejectedValueOnce(new Error("Không tìm thấy đảng viên"));
 
     await expect(
       getMemberById("khong-ton-tai", { role: ROLES.CAN_BO_CHINH_TRI }),
@@ -311,7 +312,9 @@ describe("getMemberById", () => {
   });
 
   test("BI_THU xem hồ sơ của tổ chức khác -> ném lỗi cấm truy cập", async () => {
-    memberRepository.findById.mockResolvedValueOnce({ Id: "m1", ToChucDangId: "o1" });
+    validateReadPermission.mockRejectedValueOnce(
+      new Error("Bạn không có quyền xem hồ sơ của đơn vị khác"),
+    );
 
     await expect(
       getMemberById("m1", { role: ROLES.BI_THU, orgId: "o2" }),
@@ -319,7 +322,7 @@ describe("getMemberById", () => {
   });
 
   test("BI_THU xem đúng hồ sơ tổ chức mình -> trả về dữ liệu map thành công", async () => {
-    memberRepository.findById.mockResolvedValueOnce({ Id: "m1", ToChucDangId: "o1" });
+    validateReadPermission.mockResolvedValueOnce({ Id: "m1", ToChucDangId: "o1" });
 
     const result = await getMemberById("m1", { role: ROLES.BI_THU, orgId: "o1" });
 
@@ -327,7 +330,7 @@ describe("getMemberById", () => {
   });
 
   test("CAN_BO_CHINH_TRI xem hồ sơ bất kỳ tổ chức nào -> không bị chặn", async () => {
-    memberRepository.findById.mockResolvedValueOnce({ Id: "m1", ToChucDangId: "o-khac" });
+    validateReadPermission.mockResolvedValueOnce({ Id: "m1", ToChucDangId: "o-khac" });
 
     await expect(
       getMemberById("m1", { role: ROLES.CAN_BO_CHINH_TRI, orgId: "o1" }),
@@ -345,33 +348,48 @@ describe("createMember", () => {
     });
   });
 
-  test("CAN_BO_CHINH_TRI không thuộc đơn vị gốc (còn tổ chức cha) -> ném lỗi", async () => {
-    orgRepository.findById.mockResolvedValue({ Id: "orgX", ToChucChaId: "parent" });
-
+  test("DANG_VIEN tạo mới -> ném lỗi không có quyền", async () => {
     await expect(
-      createMember(validMemberData(), { role: ROLES.CAN_BO_CHINH_TRI, orgId: "orgX" }),
-    ).rejects.toThrow("Bạn không có quyền thêm hồ sơ mới");
+      createMember(validMemberData(), { role: ROLES.DANG_VIEN, orgId: "orgX" }),
+    ).rejects.toThrow("Đảng viên không có quyền thêm mới hồ sơ.");
     expect(memberRepository.create).not.toHaveBeenCalled();
   });
 
-  test("CAN_BO_CHINH_TRI thuộc đơn vị gốc (không có tổ chức cha) -> tạo thành công", async () => {
-    orgRepository.findById.mockResolvedValue({ Id: "orgX", ToChucChaId: null });
+  test("CAN_BO_CHINH_TRI không có org nào được chọn hoặc gắn -> ném lỗi yêu cầu chọn tổ chức", async () => {
+    await expect(
+      createMember(validMemberData(), { role: ROLES.CAN_BO_CHINH_TRI }),
+    ).rejects.toThrow("Vui lòng chọn Tổ chức Đảng (Chi bộ) sinh hoạt cho đảng viên.");
+    expect(memberRepository.create).not.toHaveBeenCalled();
+  });
 
-    const result = await createMember(validMemberData(), {
-      role: ROLES.CAN_BO_CHINH_TRI,
-      orgId: "orgX",
-    });
+  test("CAN_BO_CHINH_TRI chọn ToChucDangId -> tạo thành công cho chi bộ đó", async () => {
+    orgRepository.findById.mockResolvedValue({ Id: "chiBo1", Ten: "Chi bộ 1" });
+
+    const result = await createMember(
+      { ...validMemberData(), ToChucDangId: "chiBo1" },
+      { role: ROLES.CAN_BO_CHINH_TRI },
+    );
 
     expect(memberRepository.create).toHaveBeenCalled();
     expect(result).toEqual({ id: "new-id", __mapped: true });
   });
 
-  test("BI_THU tạo mới -> không bị áp ràng buộc tổ chức gốc", async () => {
-    orgRepository.findById.mockResolvedValue(null);
+  test("BI_THU tạo mới -> tự động gắn vào chi bộ mình (user.orgId)", async () => {
+    orgRepository.findById.mockResolvedValue({ Id: "orgX", Ten: "Chi bộ X" });
 
     await expect(
       createMember(validMemberData(), { role: ROLES.BI_THU, orgId: "orgX" }),
     ).resolves.toEqual({ id: "new-id", __mapped: true });
+  });
+
+  test("BI_THU truyền ToChucDangId khác với orgId của mình -> ném lỗi", async () => {
+    await expect(
+      createMember(
+        { ...validMemberData(), ToChucDangId: "otherOrg" },
+        { role: ROLES.BI_THU, orgId: "orgX" },
+      ),
+    ).rejects.toThrow("Bạn chỉ có quyền thêm đảng viên vào chi bộ của mình.");
+    expect(memberRepository.create).not.toHaveBeenCalled();
   });
 });
 

@@ -14,7 +14,12 @@ const {
  */
 const generateAccessToken = (user) => {
   return jwt.sign(
-    { userId: user.Id, role: user.VaiTro, orgId: user.ToChucDangId },
+    {
+      userId: user.id || user.Id,
+      role: user.vaiTro || user.VaiTro,
+      orgId: user.toChucDangId || user.ToChucDangId,
+      memberId: user.dangVienId || user.DangVienId || null,
+    },
     JWT_SECRET,
     { expiresIn: "1h" },
   );
@@ -74,6 +79,7 @@ const login = async (username, password) => {
       HoTen: user.HoTen,
       role: user.VaiTro,
       orgId: user.ToChucDangId,
+      memberId: user.DangVienId || user.dangVienId || null,
       status: user.TrangThai,
       mustChangePassword: user.YeuCauDoiMatKhau,
     },
@@ -139,6 +145,7 @@ const getMe = async (userId) => {
     HoTen: user.HoTen,
     role: user.VaiTro,
     orgId: user.ToChucDangId,
+    memberId: user.DangVienId || user.dangVienId || null,
     status: user.TrangThai,
     mustChangePassword: user.YeuCauDoiMatKhau,
     organization: user.ToChucDang
@@ -148,6 +155,7 @@ const getMe = async (userId) => {
           ParentId: user.ToChucDang.ToChucChaId,
         }
       : null,
+    member: user.DangVien || user.dangVien || null,
   };
 };
 

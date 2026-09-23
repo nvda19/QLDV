@@ -179,7 +179,7 @@ router.put(
 // 4. Đề xuất Huy hiệu Đảng cá nhân
 router.post(
   "/:id/badges/propose",
-  authorize(ROLES.CAN_BO_CHINH_TRI, ROLES.BI_THU),
+  authorize(ROLES.BI_THU),
   badgeController.proposeBadge,
 );
 router.post(

@@ -1,7 +1,8 @@
-﻿// Vai trò người dùng
+// Vai trò người dùng
 const ROLES = Object.freeze({
   BI_THU: "BI_THU",
   CAN_BO_CHINH_TRI: "CAN_BO_CHINH_TRI",
+  DANG_VIEN: "DANG_VIEN",
 });
 
 // Trạng thái phê duyệt dùng cho đánh giá xếp loại & đề xuất huy hiệu.

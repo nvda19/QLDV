@@ -104,9 +104,14 @@ const importMembers = async (req, res, next) => {
   }
 };
 
+const {
+  validateReadPermission,
+} = require("../../domain/policies/member.policy");
+
 // Xuất phiếu đảng viên ra file Word (.docx) theo biểu mẫu chuẩn
 const exportMemberWord = async (req, res, next) => {
   try {
+    await validateReadPermission(req.params.id, req.user);
     const buffer = await memberExportService.exportMemberToWord(req.params.id);
     const fileName = `Phieu_DangVien_${req.params.id}.docx`;
     res.setHeader(

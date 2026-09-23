@@ -3,7 +3,7 @@ const decisionService = require("../services/decision/decision.service");
 // Lấy danh sách toàn bộ văn bản quyết định
 const getAllDecisions = async (req, res, next) => {
   try {
-    const decisions = await decisionService.getAllDecisions(req.query);
+    const decisions = await decisionService.getAllDecisions(req.query, req.user);
     res.status(200).json({ success: true, data: decisions });
   } catch (error) {
     next(error);
@@ -13,7 +13,7 @@ const getAllDecisions = async (req, res, next) => {
 // Chi tiết quyết định theo ID
 const getDecisionById = async (req, res, next) => {
   try {
-    const decision = await decisionService.getDecisionById(req.params.id);
+    const decision = await decisionService.getDecisionById(req.params.id, req.user);
     res.status(200).json({ success: true, data: decision });
   } catch (error) {
     next(error);

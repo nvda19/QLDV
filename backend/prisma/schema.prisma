@@ -20,6 +20,7 @@ datasource db {
 enum VaiTro {
   BI_THU
   CAN_BO_CHINH_TRI
+  DANG_VIEN
 }
 
 enum TrangThaiDangVien {
@@ -104,6 +105,8 @@ model NguoiDung {
   vaiTro               VaiTro             @map("vaiTro")
   toChucDangId         String?            @db.Uuid @map("toChucDangId")
   toChucDang           ToChucDang?        @relation(fields: [toChucDangId], references: [id])
+  dangVienId           String?            @unique @db.Uuid @map("dangVienId")
+  dangVien             DangVien?          @relation(fields: [dangVienId], references: [id], onDelete: SetNull)
   hoTen                String             @default("Người dùng") @db.VarChar(100) @map("hoTen")
   trangThai            TrangThaiNguoiDung @default(ACTIVE) @map("trangThai")
   soLanSaiMatKhau      Int                @default(0) @map("soLanSaiMatKhau")
@@ -116,6 +119,7 @@ model NguoiDung {
   danhSachThongBaoGui  ThongBao[]         @relation("ThongBaoGui")
 
   @@index([toChucDangId])
+  @@index([dangVienId])
 }
 
 // 3. BẢNG CỐT LÕI - ĐẢNG VIÊN
@@ -130,6 +134,7 @@ model DangVien {
   updatedAt             DateTime          @updatedAt @map("updatedAt")
   deletedAt             DateTime?         @map("deletedAt")
   deletedBy             String?           @db.VarChar(50) @map("deletedBy")
+  nguoiDung             NguoiDung?
   lyLichCaNhan          LyLichCaNhan?
   thongTinVaoDang       ThongTinVaoDang?
   trinhDoHocVan         TrinhDoHocVan?

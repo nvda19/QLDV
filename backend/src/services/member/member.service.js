@@ -4,6 +4,7 @@ const memberHistoryRepository = require("../../repositories/member/memberHistory
 const { mapToFrontend } = require("../../domain/mappers/member.mapper");
 const {
   validateWritePermission,
+  validateReadPermission,
 } = require("../../domain/policies/member.policy");
 const orgRepository = require("../../repositories/org.repository");
 const {
@@ -636,7 +637,16 @@ const getAllMembers = async (user) => {
   });
 
   let list;
-  if (user.role === ROLES.CAN_BO_CHINH_TRI) {
+  if (user.role === ROLES.DANG_VIEN) {
+    if (!user.memberId) {
+      list = [];
+    } else {
+      list = await memberRepository.findAllWithInclude(
+        { id: user.memberId },
+        memberRepository.include,
+      );
+    }
+  } else if (user.role === ROLES.CAN_BO_CHINH_TRI) {
     list = await memberRepository.findAllWithInclude(
       {},
       memberRepository.include,
@@ -710,9 +720,7 @@ const getAllMembers = async (user) => {
         });
       }
     });
-    mapped.orgHistory = orgHistory.sort(
-      (a, b) => new Date(a.date) - new Date(b.date),
-    );
+    mapped.orgHistory = orgHistory;
     return mapped;
   });
 };
@@ -724,13 +732,9 @@ const getAllMembers = async (user) => {
  * @returns {Promise<Object>}
  */
 const getMemberById = async (memberId, user) => {
-  const member = await memberRepository.findById(memberId);
-  if (!member) throw new Error("Không tìm thấy đảng viên");
-  if (user.role === ROLES.BI_THU && member.ToChucDangId !== user.orgId) {
-    throw new Error("Bạn không có quyền xem hồ sơ của đơn vị khác");
-  }
+  const member = await validateReadPermission(memberId, user);
   const allOrgs = await orgRepository.findAll();
-  return mapToFrontend(member, new Map(allOrgs.map((o) => [o.Id, o])));
+  return mapToFrontend(member, new Map(allOrgs.map((o) => [o.id || o.Id, o])));
 };
 
 /**
@@ -740,20 +744,37 @@ const getMemberById = async (memberId, user) => {
  * @returns {Promise<object>} - Hồ sơ đảng viên đã được map sang frontend format
  */
 const createMember = async (data, user) => {
-  validateMemberInput(data);
-  const userOrg = await orgRepository.findById(user.orgId);
-  // Cán bộ chính trị chỉ được thêm hồ sơ khi gắn với tổ chức gốc (không có cha) —
-  // tức tài khoản cấp toàn hệ thống, không phải tài khoản của một chi bộ cụ thể.
-  if (
-    user.role === ROLES.CAN_BO_CHINH_TRI &&
-    (!userOrg || userOrg.ToChucChaId !== null)
-  ) {
-    throw new Error("Bạn không có quyền thêm hồ sơ mới");
+  if (user.role === ROLES.DANG_VIEN) {
+    throw new Error("Đảng viên không có quyền thêm mới hồ sơ.");
   }
-  const dv = await saveDangVien(data, user.orgId, true, null);
-  const created = await memberRepository.findById(dv.Id);
+  validateMemberInput(data);
+
+  let targetOrgId;
+  if (user.role === ROLES.BI_THU) {
+    targetOrgId = user.orgId;
+    if (data.ToChucDangId && data.ToChucDangId !== user.orgId) {
+      throw new Error("Bạn chỉ có quyền thêm đảng viên vào chi bộ của mình.");
+    }
+  } else if (user.role === ROLES.CAN_BO_CHINH_TRI) {
+    targetOrgId =
+      data.ToChucDangId || data.toChucDangId || data.orgId || user.orgId;
+  }
+
+  if (!targetOrgId) {
+    throw new Error(
+      "Vui lòng chọn Tổ chức Đảng (Chi bộ) sinh hoạt cho đảng viên.",
+    );
+  }
+
+  const targetOrg = await orgRepository.findById(targetOrgId);
+  if (!targetOrg) {
+    throw new Error("Tổ chức Đảng không tồn tại.");
+  }
+
+  const dv = await saveDangVien(data, targetOrgId, true, null);
+  const created = await memberRepository.findById(dv.Id || dv.id);
   const allOrgs = await orgRepository.findAll();
-  return mapToFrontend(created, new Map(allOrgs.map((o) => [o.Id, o])));
+  return mapToFrontend(created, new Map(allOrgs.map((o) => [o.Id || o.id, o])));
 };
 
 /**
@@ -765,10 +786,21 @@ const createMember = async (data, user) => {
  */
 const updateMember = async (memberId, data, user) => {
   const member = await validateWritePermission(memberId, user);
-  await saveDangVien(data, member.ToChucDangId, false, memberId);
+  let targetOrgId = member.ToChucDangId || member.toChucDangId;
+  if (
+    user.role === ROLES.CAN_BO_CHINH_TRI &&
+    (data.ToChucDangId || data.toChucDangId)
+  ) {
+    const requestedOrgId = data.ToChucDangId || data.toChucDangId;
+    const requestedOrg = await orgRepository.findById(requestedOrgId);
+    if (requestedOrg) {
+      targetOrgId = requestedOrgId;
+    }
+  }
+  await saveDangVien(data, targetOrgId, false, memberId);
   const allOrgs = await orgRepository.findAll();
   const updatedFull = await memberRepository.findById(memberId);
-  return mapToFrontend(updatedFull, new Map(allOrgs.map((o) => [o.Id, o])));
+  return mapToFrontend(updatedFull, new Map(allOrgs.map((o) => [o.Id || o.id, o])));
 };
 
 /**

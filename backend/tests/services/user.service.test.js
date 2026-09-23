@@ -1,5 +1,6 @@
 const userRepository = require("../../src/repositories/user.repository");
 const orgRepository = require("../../src/repositories/org.repository");
+const memberRepository = require("../../src/repositories/member/member.repository");
 const bcrypt = require("bcryptjs");
 const { ROLES } = require("../../src/domain/constants/member.constants");
 
@@ -7,12 +8,17 @@ jest.mock("../../src/repositories/user.repository", () => ({
   findAll: jest.fn(),
   findByUsername: jest.fn(),
   findById: jest.fn(),
+  findByMemberId: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
 }));
 
 jest.mock("../../src/repositories/org.repository", () => ({
+  findById: jest.fn(),
+}));
+
+jest.mock("../../src/repositories/member/member.repository", () => ({
   findById: jest.fn(),
 }));
 
@@ -59,6 +65,8 @@ describe("user.service", () => {
           orgId: null,
           orgName: null,
           status: "ACTIVE",
+          dangVienId: null,
+          dangVien: null,
           createdAt: "2024-01-01",
         },
       ]);
@@ -126,9 +134,74 @@ describe("user.service", () => {
         HoTen: "Nguyễn Văn Test",
         VaiTro: ROLES.CAN_BO_CHINH_TRI,
         ToChucDangId: null,
+        DangVienId: null,
         TrangThai: "ACTIVE",
       });
       expect(result.id).toBe("u2");
+    });
+
+    test("ném lỗi nếu tạo Đảng viên (DANG_VIEN) nhưng không chọn hồ sơ Đảng viên", async () => {
+      userRepository.findByUsername.mockResolvedValueOnce(null);
+      await expect(
+        createUser({ ...validUser, role: ROLES.DANG_VIEN, dangVienId: null })
+      ).rejects.toThrow("Tài khoản Đảng viên bắt buộc phải liên kết với một hồ sơ Đảng viên");
+    });
+
+    test("ném lỗi nếu hồ sơ Đảng viên không tồn tại", async () => {
+      userRepository.findByUsername.mockResolvedValueOnce(null);
+      memberRepository.findById.mockResolvedValueOnce(null);
+      await expect(
+        createUser({ ...validUser, role: ROLES.DANG_VIEN, dangVienId: "dv-invalid" })
+      ).rejects.toThrow("Hồ sơ Đảng viên không tồn tại");
+    });
+
+    test("ném lỗi nếu hồ sơ Đảng viên đã có tài khoản", async () => {
+      userRepository.findByUsername.mockResolvedValueOnce(null);
+      memberRepository.findById.mockResolvedValueOnce({ Id: "dv1", HoTenDangDung: "Đồng chí A" });
+      userRepository.findByMemberId.mockResolvedValueOnce({ Id: "user-exists" });
+      await expect(
+        createUser({ ...validUser, role: ROLES.DANG_VIEN, dangVienId: "dv1" })
+      ).rejects.toThrow("Hồ sơ Đảng viên này đã có tài khoản người dùng");
+    });
+
+    test("tạo thành công tài khoản cho Đảng viên hợp lệ", async () => {
+      userRepository.findByUsername.mockResolvedValueOnce(null);
+      memberRepository.findById.mockResolvedValueOnce({
+        Id: "dv1",
+        HoTenDangDung: "Đồng chí A",
+        ToChucDangId: "org-chi-bo",
+      });
+      userRepository.findByMemberId.mockResolvedValueOnce(null);
+      orgRepository.findById.mockResolvedValueOnce({ Id: "org-chi-bo", Ten: "Chi bộ 1" });
+      bcrypt.hash.mockResolvedValueOnce("hashed_password");
+      userRepository.create.mockResolvedValueOnce({
+        Id: "u3",
+        TenDangNhap: "dangvien1",
+        HoTen: "Đồng chí A",
+        VaiTro: ROLES.DANG_VIEN,
+        ToChucDangId: "org-chi-bo",
+        DangVienId: "dv1",
+        TrangThai: "ACTIVE",
+        CreatedAt: "now",
+      });
+
+      const result = await createUser({
+        username: "dangvien1",
+        password: "Password123!",
+        role: ROLES.DANG_VIEN,
+        dangVienId: "dv1",
+      });
+
+      expect(userRepository.create).toHaveBeenCalledWith({
+        TenDangNhap: "dangvien1",
+        MatKhauHash: "hashed_password",
+        HoTen: "Đồng chí A",
+        VaiTro: ROLES.DANG_VIEN,
+        ToChucDangId: "org-chi-bo",
+        DangVienId: "dv1",
+        TrangThai: "ACTIVE",
+      });
+      expect(result.id).toBe("u3");
     });
   });
 

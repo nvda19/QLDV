@@ -2,6 +2,19 @@ const prisma = require("../infrastructure/database/prisma");
 const { ROLES } = require("../domain/constants/member.constants");
 
 /**
+ * Định nghĩa các quan hệ lồng nhau cần nạp đầy đủ khi truy vấn thông tin người dùng
+ */
+const userDetailInclude = {
+  toChucDang: true,
+  dangVien: {
+    include: {
+      lyLichCaNhan: true,
+    },
+  },
+};
+const userInclude = userDetailInclude;
+
+/**
  * Gắn alias PascalCase lên object người dùng để tương thích ngược
  * @param {Object} u 
  * @returns {Object}
@@ -18,12 +31,21 @@ function attachUserAliases(u) {
   u.SoLanSaiMatKhau = u.soLanSaiMatKhau;
   u.YeuCauDoiMatKhau = u.yeuCauDoiMatKhau;
   u.RefreshToken = u.refreshToken;
+  u.DangVienId = u.dangVienId;
   u.CreatedAt = u.createdAt;
   if (u.toChucDang) {
     u.toChucDang.Id = u.toChucDang.id;
     u.toChucDang.Ten = u.toChucDang.ten;
     u.toChucDang.ToChucChaId = u.toChucDang.toChucChaId;
     u.ToChucDang = u.toChucDang;
+  }
+  if (u.dangVien) {
+    u.DangVien = u.dangVien;
+    u.dangVien.Id = u.dangVien.id;
+    if (u.dangVien.lyLichCaNhan) {
+      u.dangVien.LyLichCaNhan = u.dangVien.lyLichCaNhan;
+      u.dangVien.lyLichCaNhan.HoTenDangDung = u.dangVien.lyLichCaNhan.hoTenDangDung;
+    }
   }
   return u;
 }
@@ -47,6 +69,9 @@ function mapUserDataToDb(data = {}) {
   }
   if (data.toChucDangId !== undefined || data.ToChucDangId !== undefined) {
     mapped.toChucDangId = data.toChucDangId !== undefined ? data.toChucDangId : data.ToChucDangId;
+  }
+  if (data.dangVienId !== undefined || data.DangVienId !== undefined) {
+    mapped.dangVienId = data.dangVienId !== undefined ? data.dangVienId : data.DangVienId;
   }
   if (data.trangThai !== undefined || data.TrangThai !== undefined) {
     mapped.trangThai = data.trangThai !== undefined ? data.trangThai : data.TrangThai;
@@ -96,6 +121,18 @@ class UserRepository {
             ten: true,
           },
         },
+        dangVien: {
+          select: {
+            id: true,
+            soTheDangVien: true,
+            soLyLich: true,
+            lyLichCaNhan: {
+              select: {
+                hoTenDangDung: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -114,7 +151,14 @@ class UserRepository {
   async findById(id, includeOrg = false) {
     const user = await prisma.nguoiDung.findUnique({
       where: { id },
-      include: includeOrg ? { toChucDang: true } : undefined,
+      include: {
+        toChucDang: includeOrg ? true : false,
+        dangVien: {
+          include: {
+            lyLichCaNhan: true,
+          },
+        },
+      },
     });
     return attachUserAliases(user);
   }
@@ -127,6 +171,14 @@ class UserRepository {
   async findByUsername(username) {
     const user = await prisma.nguoiDung.findUnique({
       where: { tenDangNhap: username },
+      include: {
+        toChucDang: true,
+        dangVien: {
+          include: {
+            lyLichCaNhan: true,
+          },
+        },
+      },
     });
     return attachUserAliases(user);
   }
@@ -139,9 +191,7 @@ class UserRepository {
   async create(data) {
     const user = await prisma.nguoiDung.create({
       data: mapUserDataToDb(data),
-      include: {
-        toChucDang: true,
-      },
+      include: userDetailInclude,
     });
     return attachUserAliases(user);
   }
@@ -156,9 +206,7 @@ class UserRepository {
     const user = await prisma.nguoiDung.update({
       where: { id },
       data: mapUserDataToDb(data),
-      include: {
-        toChucDang: true,
-      },
+      include: userDetailInclude,
     });
     return attachUserAliases(user);
   }
@@ -229,6 +277,20 @@ class UserRepository {
       select: { id: true },
     });
     return users.map((u) => u.id);
+  }
+
+  /**
+   * Tìm người dùng liên kết với Đảng viên qua dangVienId
+   * @param {string} dangVienId ID của Đảng viên
+   * @returns {Promise<Object|null>} Người dùng tương ứng hoặc null
+   */
+  async findByMemberId(dangVienId) {
+    if (!dangVienId) return null;
+    const user = await prisma.nguoiDung.findFirst({
+      where: { dangVienId },
+      include: userInclude,
+    });
+    return attachUserAliases(user);
   }
 }
 
